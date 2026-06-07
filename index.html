@@ -242,6 +242,19 @@ tr:hover td{background:#fafafa}
     <button class="btn-s" onclick="clearRoster()">Clear Roster</button>
   </div>
   <div id="rosterList"><div class="empty-state"><div class="icon">👥</div><p>No members yet.</p></div></div>
+
+  <!-- DEFAULT MEMBERS — pre-loaded club members -->
+  <div style="margin-top:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div>
+        <span style="font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em">Club Members</span>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:8px">Pre-loaded — remove any that won't attend today</span>
+      </div>
+      <button class="btn-b" onclick="addDefaultsToRoster()" style="font-size:10px;height:28px;padding:0 10px">+ Add default members</button>
+    </div>
+    <div id="defaultMembersList"></div>
+  </div>
+
   <div style="margin-top:14px;text-align:right">
     <button class="btn-b" onclick="switchTab('session')">Go to Session →</button>
   </div>
@@ -252,10 +265,26 @@ tr:hover td{background:#fafafa}
   <!-- AH COUNTER PANEL -->
   <div id="panelAh">
     <div class="section-head">
-      <h2>Ah Counter</h2>
-      <p>Tap filler words as each speaker talks</p>
-      <div class="maroon-line"></div>
-    </div>
+          <h2>Ah Counter</h2>
+          <p>Tap filler words as each speaker talks</p>
+          <div class="maroon-line"></div>
+        </div>
+
+        <div style="background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em">Opening Script</span>
+            <button class="btn-b" onclick="copyAhScript()" style="font-size:10px;height:28px;padding:0 10px">Copy</button>
+          </div>
+          <div id="ahScript" style="font-size:13px;color:var(--text-muted);line-height:1.9">
+            "Greetings Mr./Madam Toastmaster, fellow Toastmasters, and guests. The purpose of the Ah-Counter is to note
+            words and sounds that are used as a "crutch" or "pause filler" by anyone who speaks. During the meeting, I will
+            listen for overused words, including <strong>and, well, but, so,</strong> and <strong>you know</strong>. I will also listen for filler
+            sounds, including <strong>ah, um,</strong> and <strong>er</strong>. I will also note when a speaker repeats a word or phrase,
+            such as <em>"I, I"</em> or <em>"This means, this means."</em><br><br>
+            At the end of the meeting, I will report the number of times that each speaker used these expressions.<br><br>
+            Thank you, Mr./Madam Toastmaster."
+          </div>
+        </div>
     <div class="toolbar">
       <div class="fg">
         <span class="fl">Speaker</span>
@@ -297,11 +326,90 @@ tr:hover td{background:#fafafa}
 
   <!-- TIMER PANEL -->
   <div id="panelTimer" style="display:none">
-    <div class="section-head">
-      <h2>Timer</h2>
-      <p>Select a speaker, set the type, start the clock</p>
-      <div class="maroon-line"></div>
+    <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2>Timer</h2>
+        <p>Select a speaker, set the type, start the clock</p>
+        <div class="maroon-line"></div>
+      </div>
+
+      <button class="btn-b" onclick="openDisplayWindow()" style="align-self:center;margin-top:6px">
+        📺 Open Display Window
+      </button>
     </div>
+
+    <!-- OBS SETUP GUIDE -->
+    <details style="background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:0;margin-bottom:14px;box-shadow:var(--shadow);overflow:hidden">
+      <summary style="padding:13px 18px;cursor:pointer;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;list-style:none;display:flex;justify-content:space-between;align-items:center">
+        <span>📺 How to set up OBS as your Zoom background</span>
+        <span style="font-size:10px;color:var(--text-muted);font-weight:500;text-transform:none;letter-spacing:0">click to expand ▾</span>
+      </summary>
+      <div style="padding:0 18px 18px;border-top:1px solid var(--border-light)">
+
+        <!-- Video -->
+        <div style="margin:14px 0 18px">
+          <div style="font-family:var(--font-head);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">📹 Video guide</div>
+          <a href="https://www.youtube.com/watch?v=2JGl902KVok" target="_blank"
+            style="display:inline-flex;align-items:center;gap:8px;background:#ff0000;color:white;padding:8px 14px;border-radius:var(--radius);font-family:var(--font-head);font-size:12px;font-weight:700;text-decoration:none;letter-spacing:0.04em">
+            ▶ Watch on YouTube
+          </a>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:10px">How to use OBS as a virtual camera in Zoom</span>
+        </div>
+
+        <!-- Steps -->
+        <div style="font-size:13px;color:var(--text);line-height:1;display:flex;flex-direction:column;gap:14px">
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="min-width:26px;height:26px;border-radius:50%;background:var(--maroon);color:white;font-family:var(--font-head);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+            <div>
+              <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Download & install OBS</div>
+              <div style="color:var(--text-muted);line-height:1.6">Go to <a href="https://obsproject.com" target="_blank" style="color:var(--blue);font-weight:600">obsproject.com</a> or search <strong>"OBS Studio"</strong> in the Microsoft Store. Install and open it. No special configuration needed at first launch.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="min-width:26px;height:26px;border-radius:50%;background:var(--maroon);color:white;font-family:var(--font-head);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+            <div>
+              <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Open the Display Window</div>
+              <div style="color:var(--text-muted);line-height:1.6">Click <strong>📺 Open Display Window</strong> above. A new browser window will open — this is the screen OBS will capture. Before continuing, <strong>enable the OBS Guide checkbox</strong> inside that window (top right corner) so you can see where to place your camera.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="min-width:26px;height:26px;border-radius:50%;background:var(--maroon);color:white;font-family:var(--font-head);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+            <div>
+              <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Add a Window Capture in OBS</div>
+              <div style="color:var(--text-muted);line-height:1.6">In OBS, under <strong>Sources</strong> → click <strong>+</strong> → select <strong>Window Capture</strong>. In the dropdown, choose the browser window showing the display. Click OK. Right-click the source → <strong>Fit to screen</strong> so it fills the OBS canvas completely.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="min-width:26px;height:26px;border-radius:50%;background:var(--maroon);color:white;font-family:var(--font-head);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+            <div>
+              <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Add your camera on top</div>
+              <div style="color:var(--text-muted);line-height:1.6">In OBS → Sources → <strong>+</strong> → <strong>Video Capture Device</strong> → select your webcam. Drag and resize it so it sits exactly over the <em>"PLACE OBS CAMERA HERE"</em> guide in the bottom-right corner.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="min-width:26px;height:26px;border-radius:50%;background:var(--maroon);color:white;font-family:var(--font-head);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
+            <div>
+              <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Set OBS as your Zoom camera</div>
+              <div style="color:var(--text-muted);line-height:1.6">In Zoom → <strong>Settings → Video → Camera</strong> → select <strong>OBS Virtual Camera</strong>. The timer display will now appear as your video background.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="min-width:26px;height:26px;border-radius:50%;background:#e65100;color:white;font-family:var(--font-head);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">⚠</div>
+            <div>
+              <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:#e65100;margin-bottom:3px">Disable auto-framing in Zoom</div>
+              <div style="color:var(--text-muted);line-height:1.6">In Zoom → Settings → Video → uncheck <strong>"Auto-adjust my video"</strong> or <strong>"Auto-frame my video"</strong>. If left on, Zoom will detect your face and zoom in, cutting off the timer display.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </details>
 
     <!-- Opening Script -->
     <div style="background:var(--white);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)">
@@ -799,7 +907,7 @@ function removeFromQueue(i){
 }
 
 function startSpeaker(i) {
-  if(activeTimerIdx===i) return; // already running
+  if(activeTimerIdx===i) return;
   stopLiveTimer();
   activeTimerIdx=i;
   timerQueue[i].elapsed=0; timerQueue[i].state='running'; timerQueue[i].done=false;
@@ -811,9 +919,28 @@ function startSpeaker(i) {
   renderTimerQueue();
 }
 
+function resumeSpeaker(i) {
+  if(activeTimerIdx===i) return;
+  stopLiveTimer();
+  activeTimerIdx=i;
+  timerLiveSec=timerQueue[i].elapsed||0; // resume from where we stopped
+  timerQueue[i].state='running';
+  timerLiveInterval=setInterval(()=>{
+    timerLiveSec++; timerQueue[activeTimerIdx].elapsed=timerLiveSec;
+    tickLiveTimer();
+  },1000);
+  renderTimerQueue();
+}
+
 function stopLiveTimer() {
   clearInterval(timerLiveInterval); timerLiveInterval=null;
   if(activeTimerIdx>=0 && timerQueue[activeTimerIdx]) timerQueue[activeTimerIdx].state='stopped';
+  // Broadcast pause state
+  if(BC && activeTimerIdx>=0 && timerQueue[activeTimerIdx]) {
+    const sp=timerQueue[activeTimerIdx];
+    BC.postMessage({type:'timer',speaker:sp.name,typeLabel:sp.typeLabel,
+      elapsed:sp.elapsed,green:sp.green,yellow:sp.yellow,red:sp.red,running:false,done:false});
+  }
 }
 
 function logSpeaker(i) {
@@ -824,6 +951,8 @@ function logSpeaker(i) {
   timerLog.push({name:sp.name,type:sp.typeLabel,green:sp.green,yellow:sp.yellow,red:sp.red,elapsed,within});
   timerQueue[i].done=true; timerQueue[i].state='logged';
   activeTimerIdx=-1;
+  if(BC) BC.postMessage({type:'timer',speaker:sp.name,typeLabel:sp.typeLabel,
+    elapsed:sp.elapsed,green:sp.green,yellow:sp.yellow,red:sp.red,running:false,done:true});
   renderTimerQueue(); renderTimerLog();
 }
 
@@ -846,6 +975,15 @@ function tickLiveTimer() {
     const dot=card.querySelector(`.signal-dot.${d}`);
     if(dot) dot.classList.toggle('active', el>=thresholds[idx]);
   });
+  // Broadcast to display window
+  if(BC) BC.postMessage({type:'timer',speaker:sp.name,typeLabel:sp.typeLabel,
+    elapsed:el,green:sp.green,yellow:sp.yellow,red:sp.red,running:true,done:false});
+}
+
+function timerMainBtn(i, isActive, state) {
+  if (isActive) return `<button class="btn-start running" onclick="stopLiveTimer()">⏸ Pause</button>`;
+  if (state === 'stopped') return `<button class="btn-start" onclick="resumeSpeaker(${i})">▶ Resume</button>`;
+  return `<button class="btn-start" onclick="startSpeaker(${i})">▶ Start</button>`;
 }
 
 function renderTimerQueue() {
@@ -873,9 +1011,9 @@ function renderTimerQueue() {
         <div class="signal-dot r${(sp.elapsed||0)>=sp.red?' active':''}"></div>
       </div>`:''}
       <div class="timer-btn-row">
-        ${!isDone?`<button class="btn-start${isActive?' running':''}" onclick="${isActive?'stopLiveTimer()':'startSpeaker('+i+')'}">${isActive?'⏸ Pause':'▶ Start'}</button>`:''}
-        ${isActive||sp.state==='stopped'?`<button class="btn-log" onclick="logSpeaker(${i})">✓ Log Time</button>`:''}
-        ${isDone?`<span style="font-size:12px;color:var(--green);font-family:var(--font-head);font-weight:700">✓ Logged ${secToMmSs(sp.elapsed)}</span>`:''}
+        ${!isDone ? timerMainBtn(i, isActive, sp.state) : ''}
+        ${isActive||sp.state==='stopped' ? `<button class="btn-log" onclick="logSpeaker(${i})">✓ Log Time</button>` : ''}
+        ${isDone ? `<span style="font-size:12px;color:var(--green);font-family:var(--font-head);font-weight:700">✓ Logged ${secToMmSs(sp.elapsed)}</span>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -909,14 +1047,29 @@ function copyTimerScript(){
   navigator.clipboard.writeText(text);
 }
 
+function copyAhScript() {
+  const text = document.getElementById('ahScript').innerText;
+  navigator.clipboard.writeText(text);
+}
+
 function buildTimerScript() {
   document.getElementById('timerScript').innerHTML=`
-    "Greetings Mr./Madam Toastmaster, fellow Toastmasters, and guests. As Timer, I will time the Table Topics speakers, formal speeches, and evaluations, using green, yellow, and red signals.<br><br>
-    <strong>Table Topics</strong> (1–2 min): 🟢 1:00 · 🟡 1:30 · 🔴 2:00<br>
-    <strong>Speech 5–7 min</strong>: 🟢 5:00 · 🟡 6:00 · 🔴 7:00<br>
-    <strong>Ice Breaker 4–6 min</strong>: 🟢 4:00 · 🟡 5:00 · 🔴 6:00<br>
-    <strong>Evaluation</strong> (2–3 min): 🟢 2:00 · 🟡 2:30 · 🔴 3:00<br><br>
-    Thank you, Mr./Madam Toastmaster."`;
+    "Greetings Mr./Madam Toastmaster, fellow Toastmasters, and guests. As Timer, I will time the Table Topics® speakers,
+    formal speeches, and the evaluations. I will also alert each speaker of the time they have left, using the green,
+    yellow, and red cards, which denote specific times remaining.<br><br>
+    🟢 <strong>Green</strong>: You have reached the minimum time.<br>
+    🟡 <strong>Yellow</strong>: It's time to start wrapping up.<br>
+    🔴 <strong>Red</strong>: Time is up! You have 30 seconds to finish.<br><br>
+    <strong>Table Topics</strong> (max 2 min):
+    &bull; 🟢 1:00 &bull; 🟡 1:30 &bull; 🔴 2:00<br>
+    <strong>Ice Breaker</strong> (4–6 min):
+    &bull; 🟢 4:00 &bull; 🟡 5:00 &bull; 🔴 6:00<br>
+    <strong>Speech</strong> (5–7 min):
+    &bull; 🟢 5:00 &bull; 🟡 6:00 &bull; 🔴 7:00<br>
+    <strong>Evaluation</strong> (2–3 min):
+    &bull; 🟢 2:00 &bull; 🟡 2:30 &bull; 🔴 3:00<br><br>
+    I will give a full report at the end of the meeting.
+    Thank you Mr./Madam Toastmaster."`;
 }
 
 // ════════════════════════════════════════════════
@@ -1404,20 +1557,398 @@ document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target
 document.getElementById('dupModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDupModal();});
 
 // ════════════════════════════════════════════════
+// DEFAULT MEMBERS
+// Edit this list to match your club.
+// Search for DEFAULT_MEMBERS to find this section.
+// ════════════════════════════════════════════════
+const DEFAULT_MEMBERS = [
+  "Alexander Sandoval",
+  "Angela Figueroa",
+  "Carlos Millones",
+  "Erika Fernandez",
+  "Leonardo Chihuan",
+  "Lincol Rios",
+  "Magaly Fernandez",
+  "Mary Salazar",
+  "Niki Caceres",
+  "Sadith Lopez",
+  "Sadith Lopez",
+  "Sara Cueva",
+  "Yvette Arbulu"
+];
+// Each member can be toggled off for today's session.
+let defaultMembersActive = {};
+
+function loadDefaultMembers() {
+  DEFAULT_MEMBERS.forEach(n => defaultMembersActive[n] = false);
+  renderDefaultMembers();
+}
+
+function addDefaultsToRoster() {
+  DEFAULT_MEMBERS.forEach(n => {
+    if (!roster.find(r => r.name === n)) roster.push({name: n});
+    defaultMembersActive[n] = true;
+  });
+  saveRoster(); rebuildSelects(); renderRoster(); renderDefaultMembers();
+}
+
+function toggleDefaultMember(name) {
+  defaultMembersActive[name] = !defaultMembersActive[name];
+  // Sync with roster
+  if (defaultMembersActive[name]) {
+    if (!roster.find(r => r.name === name)) {
+      roster.push({name}); saveRoster(); rebuildSelects();
+    }
+  } else {
+    const idx = roster.findIndex(r => r.name === name);
+    if (idx >= 0) { roster.splice(idx, 1); saveRoster(); rebuildSelects(); }
+  }
+  renderDefaultMembers(); renderRoster();
+}
+
+function renderDefaultMembers() {
+  const el = document.getElementById('defaultMembersList');
+  if (!el) return;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px';
+  DEFAULT_MEMBERS.forEach(function(name) {
+    const active = defaultMembersActive[name] !== false;
+    const chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;'
+      + 'cursor:pointer;font-family:var(--font-head);font-size:12px;font-weight:600;'
+      + 'transition:all 0.15s;user-select:none;'
+      + (active
+          ? 'background:#e8f5e9;border:1.5px solid #43a047;color:#2e7d32;'
+          : 'background:var(--gray-fair);border:1.5px solid var(--border);color:var(--text-muted);');
+    chip.textContent = (active ? '✓ ' : '○ ') + name;
+    chip.addEventListener('click', function() { toggleDefaultMember(name); });
+    div.appendChild(chip);
+  });
+  el.innerHTML = '';
+  el.appendChild(div);
+}
+
+// ════════════════════════════════════════════════
+// OBS DISPLAY WINDOW
+// ════════════════════════════════════════════════
+let displayWindow = null;
+const BC = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('tm_display') : null;
+
+function openDisplayWindow() {
+  const url = window.location.href.split('?')[0] + '?display=1';
+  displayWindow = window.open(url, 'tm_display',
+    'width=1280,height=720,toolbar=0,menubar=0,location=0,status=0');
+}
+
+function broadcastTimerState(state) {
+  if (!BC) return;
+  BC.postMessage({type:'timer', ...state});
+}
+
+// Intercept tickLiveTimer to also broadcast
+const _origTickLiveTimer = tickLiveTimer;
+// We'll patch after all functions are defined (see INIT)
+
+// ════════════════════════════════════════════════
+// DISPLAY MODE (runs when ?display=1)
+// ════════════════════════════════════════════════
+function isDisplayMode() {
+  return new URLSearchParams(window.location.search).get('display') === '1';
+}
+
+function initDisplayMode() {
+  document.querySelector('header').style.display='none';
+  document.querySelector('.nav-bar').style.display='none';
+  document.querySelector('main').style.display='none';
+  const footer=document.querySelector('footer');
+  if(footer) footer.style.display='none';
+  document.body.style.margin='0';
+  document.body.style.overflow='hidden';
+  document.body.style.background='#0d1b2a';
+
+  const d=document.createElement('div');
+  d.id='obsDisplay';
+  d.style.cssText='position:fixed;inset:0;background:#0d1b2a;font-family:Montserrat,sans-serif;overflow:hidden;transition:background 1s ease';
+  d.innerHTML=`
+    <!-- TOP BAR -->
+    <div style="position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:16px 24px;z-index:10">
+      <div style="display:flex;align-items:center;gap:12px">
+        <svg width="40" height="40" viewBox="0 0 38 38" fill="none">
+          <circle cx="19" cy="19" r="17" fill="#004165" stroke="#F2DF74" stroke-width="1.5"/>
+          <ellipse cx="19" cy="19" rx="8" ry="17" stroke="#F2DF74" stroke-width="1" fill="none"/>
+          <line x1="2" y1="19" x2="36" y2="19" stroke="#F2DF74" stroke-width="1"/>
+          <line x1="2" y1="13" x2="36" y2="13" stroke="#F2DF74" stroke-width="0.7"/>
+          <line x1="2" y1="25" x2="36" y2="25" stroke="#F2DF74" stroke-width="0.7"/>
+          <rect x="4" y="6" width="30" height="26" rx="2" fill="none" stroke="#F2DF74" stroke-width="1.5"/>
+        </svg>
+        <div>
+          <div style="font-size:9px;font-weight:500;color:rgba(255,255,255,0.45);letter-spacing:0.15em;text-transform:uppercase">Toastmasters International</div>
+          <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:0.06em" id="dRole">Timer</div>
+        </div>
+      </div>
+      <!-- Signal dots -->
+      <div style="display:flex;gap:14px;align-items:center">
+        <div id="dDotG" style="width:22px;height:22px;border-radius:50%;background:#43a047;opacity:0.18;transition:opacity 0.4s,box-shadow 0.4s"></div>
+        <div id="dDotY" style="width:22px;height:22px;border-radius:50%;background:#f9a825;opacity:0.18;transition:opacity 0.4s,box-shadow 0.4s"></div>
+        <div id="dDotR" style="width:22px;height:22px;border-radius:50%;background:#e53935;opacity:0.18;transition:opacity 0.4s,box-shadow 0.4s"></div>
+      </div>
+    </div>
+
+    <!-- OBS GUIDE TOGGLE — top right corner, small -->
+    <div style="position:absolute;top:16px;right:110px;z-index:20;display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleObsGuide()">
+      <div id="obsGuideCheck" style="width:14px;height:14px;border:1.5px solid rgba(255,255,255,0.3);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;color:white"></div>
+      <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.06em;font-family:Montserrat,sans-serif;font-weight:600">OBS GUIDE</span>
+    </div>
+
+    <!-- IDLE STATE -->
+    <div id="dIdle" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:0.2em">STANDING BY</div>
+      <div style="width:40px;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:12px"></div>
+    </div>
+
+    <!-- MAIN CONTENT (hidden when idle) -->
+    <div id="dMain" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;padding-bottom:120px;box-sizing:border-box">
+
+      <!-- Glow layer -->
+      <div id="dGlow" style="position:absolute;inset:0;pointer-events:none;transition:opacity 1s ease;opacity:0;
+        background:radial-gradient(ellipse 60% 50% at 50% 50%, rgba(67,160,71,0.12) 0%, transparent 70%)"></div>
+
+      <!-- Speaker name -->
+      <div id="dSpeaker" style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.9);
+        letter-spacing:0.03em;margin-bottom:4px;text-shadow:0 2px 20px rgba(0,0,0,0.5)"></div>
+
+      <!-- Type / role -->
+      <div id="dType" style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);
+        letter-spacing:0.18em;text-transform:uppercase;margin-bottom:32px"></div>
+
+      <!-- CLOCK — dominant element -->
+      <div id="dClock" style="font-size:clamp(60px,18vw,160px);font-weight:700;line-height:1;
+        color:white;letter-spacing:0.02em;transition:color 0.5s,text-shadow 0.5s;
+        text-shadow:0 0 60px rgba(255,255,255,0.15)">0:00</div>
+
+      <!-- Alert text -->
+      <div id="dAlert" style="font-size:15px;font-weight:700;letter-spacing:0.1em;
+        min-height:24px;margin-top:18px;opacity:0;transition:opacity 0.4s;color:white"></div>
+
+      <!-- Time targets -->
+      <div style="display:flex;gap:32px;margin-top:20px;align-items:center">
+        <div style="text-align:center">
+          <div id="dLimG" style="font-size:15px;font-weight:700;color:#43a047"></div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.12em;margin-top:2px">GREEN</div>
+        </div>
+        <div style="width:1px;height:28px;background:rgba(255,255,255,0.1)"></div>
+        <div style="text-align:center">
+          <div id="dLimY" style="font-size:15px;font-weight:700;color:#f9a825"></div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.12em;margin-top:2px">YELLOW</div>
+        </div>
+        <div style="width:1px;height:28px;background:rgba(255,255,255,0.1)"></div>
+        <div style="text-align:center">
+          <div id="dLimR" style="font-size:15px;font-weight:700;color:#e53935"></div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.12em;margin-top:2px">RED</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM BAR: progress + OBS zone -->
+    <div id="dProgressWrap" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:16px 24px 20px;
+      background:linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)">
+      <div style="display:flex;align-items:flex-end;gap:16px">
+
+        <!-- Progress track (fills available space) -->
+        <div style="flex:1;min-width:0">
+          <!-- Label row — positioned ABOVE each marker -->
+          <div style="position:relative;height:20px;margin-bottom:4px">
+            <span style="position:absolute;left:0;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.3);font-weight:600;letter-spacing:0.06em;white-space:nowrap">START</span>
+            <span id="dProgLabelG" style="position:absolute;transform:translateX(-50%);font-size:9px;color:#43a047;font-weight:700;letter-spacing:0.04em;white-space:nowrap"></span>
+            <span id="dProgLabelY" style="position:absolute;transform:translateX(-50%);font-size:9px;color:#f9a825;font-weight:700;letter-spacing:0.04em;white-space:nowrap"></span>
+            <span id="dProgLabelR" style="position:absolute;right:0;transform:translateX(50%);font-size:9px;color:#e53935;font-weight:700;letter-spacing:0.04em;white-space:nowrap"></span>
+          </div>
+          <!-- Track -->
+          <div style="position:relative;height:6px;background:rgba(255,255,255,0.1);border-radius:3px">
+            <div id="dProgressFill" style="height:100%;border-radius:3px;transition:width 1s linear,background 0.5s;width:0%;background:#43a047"></div>
+            <!-- Green marker line + tick -->
+            <div id="dMarkerG" style="position:absolute;top:-6px;width:2px;height:18px;background:#43a047;border-radius:1px;opacity:0.8;transform:translateX(-50%)"></div>
+            <!-- Yellow marker line + tick -->
+            <div id="dMarkerY" style="position:absolute;top:-6px;width:2px;height:18px;background:#f9a825;border-radius:1px;opacity:0.8;transform:translateX(-50%)"></div>
+            <!-- Red marker (right edge) -->
+            <div style="position:absolute;top:-6px;right:0;width:2px;height:18px;background:#e53935;border-radius:1px;opacity:0.8"></div>
+            <!-- Current dot -->
+            <div id="dProgressDot" style="position:absolute;top:50%;width:14px;height:14px;border-radius:50%;
+              background:white;border:2px solid rgba(0,0,0,0.4);
+              transform:translate(-50%,-50%);transition:left 1s linear,background 0.5s;left:0%"></div>
+          </div>
+        </div>
+
+        <!-- OBS Camera zone (optional, right side) -->
+        <div id="dObsGuide" style="display:none;width:200px;height:112px;flex-shrink:0;
+          border:2px dashed rgba(255,255,255,0.25);border-radius:6px;
+          align-items:center;justify-content:center;flex-direction:column;gap:4px;
+          background:rgba(255,255,255,0.03)">
+          <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:0.06em;text-align:center">PLACE OBS CAMERA HERE</div>
+          <div style="font-size:8px;color:rgba(255,255,255,0.2);letter-spacing:0.04em">16:9</div>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(d);
+
+  if(typeof BroadcastChannel!=='undefined'){
+    const bc=new BroadcastChannel('tm_display');
+    bc.onmessage=function(e){ if(e.data.type==='timer') updateDisplay(e.data); };
+  }
+}
+
+let obsGuideVisible=false;
+function toggleObsGuide(){
+  obsGuideVisible=!obsGuideVisible;
+  const guide=document.getElementById('dObsGuide');
+  const check=document.getElementById('obsGuideCheck');
+  if(guide){ guide.style.display=obsGuideVisible?'flex':'none'; }
+  if(check){ check.textContent=obsGuideVisible?'✓':''; check.style.background=obsGuideVisible?'rgba(255,255,255,0.2)':''; }
+}
+
+function updateDisplay(state) {
+  const { speaker, typeLabel, elapsed, green, yellow, red, running, done } = state;
+  const $ = id => document.getElementById(id);
+  if (!$('dClock')) return;
+
+  const idle = !running && !done && !speaker;
+  $('dIdle').style.display  = idle ? 'flex' : 'none';
+  $('dMain').style.display  = idle ? 'none' : 'flex';
+  $('dProgressWrap').style.display = idle ? 'none' : 'block';
+
+  if (idle) return;
+
+  $('dSpeaker').textContent = speaker  || '';
+  $('dType').textContent    = typeLabel || '';
+  $('dClock').textContent   = secToMmSs(elapsed || 0);
+  $('dLimG').textContent    = secToMmSs(green  || 0);
+  $('dLimY').textContent    = secToMmSs(yellow || 0);
+  $('dLimR').textContent    = secToMmSs(red    || 0);
+
+  // Progress bar markers (% of red time)
+  const total = red || 1;
+  const pctG  = Math.round((green  / total) * 100);
+  const pctY  = Math.round((yellow / total) * 100);
+  const pctNow= Math.min(Math.round(((elapsed||0) / total) * 100), 100);
+
+  // Position markers and labels to same % position
+  if ($('dMarkerG')) { $('dMarkerG').style.left = pctG + '%'; }
+  if ($('dMarkerY')) { $('dMarkerY').style.left = pctY + '%'; }
+  if ($('dProgressFill')) $('dProgressFill').style.width = pctNow + '%';
+  if ($('dProgressDot'))  $('dProgressDot').style.left  = pctNow + '%';
+  // Labels sit above their marker at same left %
+  if ($('dProgLabelG')) { $('dProgLabelG').style.left = pctG + '%'; $('dProgLabelG').textContent = secToMmSs(green  || 0); }
+  if ($('dProgLabelY')) { $('dProgLabelY').style.left = pctY + '%'; $('dProgLabelY').textContent = secToMmSs(yellow || 0); }
+  if ($('dProgLabelR')) { $('dProgLabelR').textContent = secToMmSs(red || 0); }
+
+  // State colors
+  const e = elapsed || 0;
+  let bgColor='#0d1b2a', clockColor='white', glowColor='rgba(255,255,255,0.06)';
+  let alertText='', alertColor='white', barColor='#43a047', dotColor='white';
+
+  if (red && e >= red) {
+    bgColor    = 'rgba(58,1,4,0.97)';
+    clockColor = '#ff6b6b';
+    glowColor  = 'rgba(119,36,50,0.35)';
+    alertText  = '⛔  TIME IS UP';
+    alertColor = '#ff8080';
+    barColor   = '#e53935';
+    dotColor   = '#ff6b6b';
+  } else if (yellow && e >= yellow) {
+    bgColor    = 'rgba(40,28,2,0.97)';
+    clockColor = '#F2DF74';
+    glowColor  = 'rgba(249,168,37,0.2)';
+    barColor   = '#f9a825';
+    dotColor   = '#F2DF74';
+    const remaining = red - e;
+    alertText  = remaining <= 30 ? '⚠  ' + remaining + ' SEC REMAINING' : '';
+    alertColor = '#F2DF74';
+  } else if (green && e >= green) {
+    bgColor    = 'rgba(2,30,10,0.97)';
+    clockColor = '#81c784';
+    glowColor  = 'rgba(67,160,71,0.18)';
+    barColor   = '#43a047';
+    dotColor   = '#81c784';
+  }
+
+  // Apply colors
+  const obs = document.getElementById('obsDisplay');
+  if (obs) obs.style.background = bgColor;
+  $('dClock').style.color      = clockColor;
+  $('dClock').style.textShadow = '0 0 60px ' + glowColor;
+
+  // Glow layer
+  const glow = $('dGlow');
+  if (glow) {
+    glow.style.opacity    = '1';
+    glow.style.background = 'radial-gradient(ellipse 70% 55% at 50% 50%, ' + glowColor + ' 0%, transparent 70%)';
+  }
+
+  // Progress bar color
+  if ($('dProgressFill')) $('dProgressFill').style.background = barColor;
+  if ($('dProgressDot'))  $('dProgressDot').style.background  = dotColor;
+
+  // Alert
+  if (alertText) {
+    $('dAlert').textContent  = alertText;
+    $('dAlert').style.color  = alertColor;
+    $('dAlert').style.opacity = '1';
+  } else {
+    $('dAlert').style.opacity = '0';
+  }
+
+  // Signal dots
+  $('dDotG').style.opacity    = (green && e >= green) ? '1'    : '0.15';
+  $('dDotG').style.boxShadow  = (green && e >= green) ? '0 0 14px #43a047' : 'none';
+  $('dDotY').style.opacity    = (yellow && e >= yellow) ? '1'  : '0.15';
+  $('dDotY').style.boxShadow  = (yellow && e >= yellow) ? '0 0 14px #f9a825' : 'none';
+  $('dDotR').style.opacity    = (red && e >= red) ? '1'        : '0.15';
+  $('dDotR').style.boxShadow  = (red && e >= red) ? '0 0 14px #e53935' : 'none';
+}
+
+
+
+// ════════════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════════════
+function showModal(t,txt){document.getElementById('modalTitle').textContent=t;document.getElementById('reportText').textContent=txt;document.getElementById('modalOverlay').classList.add('open');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function copyReport(){navigator.clipboard.writeText(document.getElementById('reportText').textContent).then(()=>{const m=document.getElementById('copiedMsg');m.style.display='block';setTimeout(()=>m.style.display='none',2000);});}
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('dupModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDupModal();});
+
+// ════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════
-loadRoster(); renderRoster(); rebuildSelects(); renderSpeakers(); renderTimerQueue(); buildTimerScript();
-const savedRole=localStorage.getItem('tmRole')||'ah'; selectRole(savedRole);
-// Apps Script URL — paste your Web App URL in the fields below or in the History/Charts tabs.
-const ep=localStorage.getItem('gsEndpoint')||'';
-if(ep){
-  document.getElementById('gsEndpoint').value=ep;
-  document.getElementById('gsEndpointChart').value=ep;
+if (isDisplayMode()) {
+  initDisplayMode();
+} else {
+  loadRoster();
+  renderRoster();
+  rebuildSelects();
+  renderSpeakers();
+  renderTimerQueue();
+  buildTimerScript();
+  loadDefaultMembers();
+  const savedRole = localStorage.getItem('tmRole') || 'ah';
+  selectRole(savedRole);
+  const ep = localStorage.getItem('gsEndpoint') || '';
+  if (ep) {
+    document.getElementById('gsEndpoint').value = ep;
+    document.getElementById('gsEndpointChart').value = ep;
+  }
+  document.getElementById('gsEndpoint').addEventListener('change', function() {
+    localStorage.setItem('gsEndpoint', this.value);
+  });
+  document.getElementById('guestName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addSpeaker();
+  });
+  document.getElementById('tmGuestName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addToTimerQueue();
+  });
+  document.getElementById('tmCustTotal')?.addEventListener('input', updateCustomPreview);
 }
-document.getElementById('gsEndpoint').addEventListener('change',function(){localStorage.setItem('gsEndpoint',this.value);});
-document.getElementById('guestName').addEventListener('keydown',e=>{if(e.key==='Enter')addSpeaker();});
-document.getElementById('tmGuestName').addEventListener('keydown',e=>{if(e.key==='Enter')addToTimerQueue();});
-document.getElementById('tmCustTotal')?.addEventListener('input', updateCustomPreview);
 </script>
 </body>
 </html>

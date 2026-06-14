@@ -509,7 +509,7 @@ tr:hover td{background:#fafafa}
 <div class="tab-panel" id="tab-charts">
   <div class="section-head">
     <h2>Charts</h2>
-    <p>Local history + Google Sheets data</p>
+    <p>Local history + Google Sheets data &nbsp;<span id="chartDateRange" style="color:var(--text-light);font-size:12px"></span></p>
     <div class="maroon-line"></div>
   </div>
 
@@ -523,24 +523,36 @@ tr:hover td{background:#fafafa}
         <option value="both">Both</option>
       </select>
     </div>
-    <div class="fg" style="max-width:175px">
+    <div class="fg" style="max-width:175px;position:relative">
       <span class="fl">Speaker</span>
-      <select class="fs" id="chartSpeakerFilter" onchange="renderCharts()">
-        <option value="all">All speakers</option>
-      </select>
+      <div id="spkDropdownBtn" onclick="toggleDropdown('spkDropdown')" class="fs" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:0 11px;height:35px;user-select:none">
+        <span id="spkLabel">All speakers</span><span style="font-size:10px">▾</span>
+      </div>
+      <div id="spkDropdown" style="display:none;position:absolute;top:58px;left:0;right:0;background:white;border:1.5px solid var(--maroon);border-radius:var(--radius);z-index:50;padding:8px;box-shadow:var(--shadow-md);max-height:200px;overflow-y:auto">
+        <label style="display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:13px;cursor:pointer;font-family:var(--font-body)">
+          <input type="checkbox" id="spkAll" onchange="onSpkAllChange()" checked> All speakers
+        </label>
+        <div id="spkCheckList"></div>
+      </div>
     </div>
-    <div class="fg" style="max-width:155px">
+
+    <div class="fg" style="max-width:155px;position:relative">
       <span class="fl">Category</span>
-      <select class="fs" id="chartCatFilter" onchange="renderCharts()">
-        <option value="all">All categories</option>
-        <option value="Speech">Speech</option>
-        <option value="Evaluator">Evaluator</option>
-        <option value="Table Topics">Table Topics</option>
-      </select>
+      <div id="catDropdownBtn" onclick="toggleDropdown('catDropdown')" class="fs" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:0 11px;height:35px;user-select:none">
+        <span id="catLabel">All categories</span><span style="font-size:10px">▾</span>
+      </div>
+      <div id="catDropdown" style="display:none;position:absolute;top:58px;left:0;right:0;background:white;border:1.5px solid var(--maroon);border-radius:var(--radius);z-index:50;padding:8px;box-shadow:var(--shadow-md)">
+        <label style="display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:13px;cursor:pointer;font-family:var(--font-body)">
+          <input type="checkbox" id="catAll" onchange="onCatAllChange()" checked> All categories
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:13px;cursor:pointer;font-family:var(--font-body)"><input type="checkbox" class="catCk" value="Speech" onchange="onCatCkChange()"> Speech</label>
+        <label style="display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:13px;cursor:pointer;font-family:var(--font-body)"><input type="checkbox" class="catCk" value="Evaluator" onchange="onCatCkChange()"> Evaluator</label>
+        <label style="display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:13px;cursor:pointer;font-family:var(--font-body)"><input type="checkbox" class="catCk" value="Table Topics" onchange="onCatCkChange()"> Table Topics</label>
+      </div>
     </div>
     <div class="fg" style="max-width:155px">
       <span class="fl">Date from</span>
-      <input class="fi" type="date" id="chartDateFrom" onchange="renderCharts()" style="font-size:12px"/>
+      <input class="fi" type="date" id="chartDateFrom" onchange="updateDateToMin();renderCharts()" style="font-size:12px"/>
     </div>
     <div class="fg" style="max-width:155px">
       <span class="fl">Date to</span>
@@ -797,7 +809,7 @@ function addSpeaker() {
   if(!name){sel.focus();return;}
   const cat=document.getElementById('ahCat').value;
   const counts={};FILLERS.forEach(f=>counts[f]=0);
-  speakers.push({name,cat,counts,tapHistory:[]});
+  speakers.unshift({name,cat,counts,tapHistory:[]});
   if(sel.value==='__guest__') document.getElementById('guestName').value='';
   sel.value=''; document.getElementById('guestNameWrap').style.display='none';
   renderSpeakers(); updatePill();
@@ -1401,12 +1413,84 @@ function groupKey(r,g){
   return r.date||'?';
 }
 
+function toggleDropdown(id){
+  const el=document.getElementById(id);
+  const isOpen=el.style.display!=='none';
+  // Close all first
+  ['spkDropdown','catDropdown'].forEach(d=>document.getElementById(d).style.display='none');
+  if(!isOpen) el.style.display='block';
+}
+// Close dropdowns when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#spkDropdownBtn')&&!e.target.closest('#spkDropdown'))
+    document.getElementById('spkDropdown').style.display='none';
+  if(!e.target.closest('#catDropdownBtn')&&!e.target.closest('#catDropdown'))
+    document.getElementById('catDropdown').style.display='none';
+});
+
+function getSelectedSpeakers(){
+  const indiv=[...document.querySelectorAll('.spkCk:checked')].map(c=>c.value);
+  return indiv.length===0?'all':indiv;
+}
+function getSelectedCats(){
+  const indiv=[...document.querySelectorAll('.catCk:checked')].map(c=>c.value);
+  return indiv.length===0?'all':indiv;
+}
+
+function onSpkAllChange(){
+  const all=document.getElementById('spkAll').checked;
+  document.querySelectorAll('.spkCk').forEach(c=>c.checked=!all);
+  updateSpkLabel(); renderCharts();
+}
+function onSpkCkChange(){
+  const cks=[...document.querySelectorAll('.spkCk')];
+  const allChecked=cks.every(c=>c.checked);
+  const noneChecked=cks.every(c=>!c.checked);
+  if(noneChecked){
+    // Never leave empty — reset to All
+    document.getElementById('spkAll').checked=true;
+    cks.forEach(c=>c.checked=false);
+  } else {
+    document.getElementById('spkAll').checked=allChecked;
+  }
+  updateSpkLabel(); renderCharts();
+}
+function updateSpkLabel(){
+  const sel=getSelectedSpeakers();
+  document.getElementById('spkLabel').textContent=
+    sel==='all'?'All speakers':sel.length===1?sel[0]:sel.length+' selected';
+}
+
+function onCatAllChange(){
+  const all=document.getElementById('catAll').checked;
+  document.querySelectorAll('.catCk').forEach(c=>c.checked=!all);
+  updateCatLabel(); renderCharts();
+}
+function onCatCkChange(){
+  const cks=[...document.querySelectorAll('.catCk')];
+  const allChecked=cks.every(c=>c.checked);
+  const noneChecked=cks.every(c=>!c.checked);
+  if(noneChecked){
+    document.getElementById('catAll').checked=true;
+    cks.forEach(c=>c.checked=false);
+  } else {
+    document.getElementById('catAll').checked=allChecked;
+  }
+  updateCatLabel(); renderCharts();
+}
+function updateCatLabel(){
+  const sel=getSelectedCats();
+  document.getElementById('catLabel').textContent=
+    sel==='all'?'All categories':sel.length===1?sel[0]:sel.length+' selected';
+}
+
 function buildChartFilters(){
   const allData = [...getChartDataByRole('ah'), ...getChartDataByRole('timer')];
-  const spks    = [...new Set(allData.map(r=>r.speaker))].sort();
-  document.getElementById('chartSpeakerFilter').innerHTML =
-    '<option value="all">All speakers</option>' +
-    spks.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+  const spks=[...new Set(allData.map(r=>r.speaker))].sort();
+  document.getElementById('spkCheckList').innerHTML = spks.map(s=>
+    '<label style="display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:13px;cursor:pointer;font-family:var(--font-body)">'+
+    '<input type="checkbox" class="spkCk" value="'+s+'" onchange="onSpkCkChange()"> '+s+'</label>'
+  ).join('');
 }
 
 function clearDateFilters(){
@@ -1443,13 +1527,13 @@ function getChartDataByRole(role){
 }
 
 function applyFilters(data){
-  const sp      = document.getElementById('chartSpeakerFilter').value;
-  const cat     = document.getElementById('chartCatFilter')?.value || 'all';
+  const sp  = getSelectedSpeakers();
+  const cat = getSelectedCats();
   const fromVal = document.getElementById('chartDateFrom')?.value || '';
   const toVal   = document.getElementById('chartDateTo')?.value   || '';
   return data.filter(r=>{
-    if(sp!=='all'  && r.speaker!==sp)  return false;
-    if(cat!=='all' && r.category!==cat) return false;
+    if(sp!=='all'  && !sp.includes(r.speaker))  return false;
+    if(cat!=='all' && !cat.includes(r.category)) return false;
     if(fromVal && r.date < fromVal) return false;
     if(toVal   && r.date > toVal)   return false;
     return true;
@@ -1460,11 +1544,38 @@ function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];
 function pct(n,tot){return tot?Math.round(n/tot*100):0;}
 
 function renderCharts(){
+  // Update date range label
+  const allDates = [...getChartDataByRole('ah'),...getChartDataByRole('timer')]
+    .map(r=>r.date).filter(Boolean).sort();
+  const rangeEl = document.getElementById('chartDateRange');
+  if(rangeEl && allDates.length) {
+    rangeEl.textContent = '('+allDates[0]+' → '+allDates[allDates.length-1]+')';
+  } else if(rangeEl) {
+    rangeEl.textContent = '';
+  }
+    // Set date input constraints
+  if(allDates.length) {
+    const fromEl = document.getElementById('chartDateFrom');
+    const toEl   = document.getElementById('chartDateTo');
+    if(fromEl) fromEl.min = allDates[0];
+    if(fromEl) fromEl.max = allDates[allDates.length-1];
+    if(toEl)   toEl.min   = fromEl?.value || allDates[0];
+    if(toEl)   toEl.max   = allDates[allDates.length-1];
+  }
   const mode=document.getElementById('chartViewMode').value;
   document.getElementById('sectionAh').style.display    =(mode==='ah'||mode==='both')?'':'none';
   document.getElementById('sectionTimer').style.display =(mode==='timer'||mode==='both')?'':'none';
   if(mode==='ah'||mode==='both')    renderAhCharts();
   if(mode==='timer'||mode==='both') renderTimerCharts();
+}
+
+function updateDateToMin(){
+  const from = document.getElementById('chartDateFrom').value;
+  const toEl = document.getElementById('chartDateTo');
+  if(from && toEl) {
+    toEl.min = from;
+    if(toEl.value && toEl.value < from) toEl.value = from;
+  }
 }
 
 // ── AH COUNTER ──

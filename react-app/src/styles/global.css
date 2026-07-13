@@ -15,8 +15,7 @@ body{font-family:var(--font-body);background:var(--gray-fair);color:var(--text);
 header{background:linear-gradient(135deg,var(--maroon-deep),var(--maroon) 60%,var(--maroon-rich));position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,0.25)}
 .header-inner{max-width:1100px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px}
-.brand-globe{width:36px;height:36px;flex-shrink:0}
-.brand-text .org{font-family:var(--font-head);font-size:10px;font-weight:500;color:rgba(255,255,255,0.7);letter-spacing:0.12em;text-transform:uppercase}
+.brand-globe{height:36px;width:auto;flex-shrink:0}
 .brand-text .name{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--white)}
 .brand-text .club{font-family:var(--font-head);font-size:10px;font-weight:500;color:rgba(255,255,255,0.6);letter-spacing:0.02em}
 .header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}

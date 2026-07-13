@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
-const LOGO_SRC = `${import.meta.env.BASE_URL}club-logo.png`;
+const LOGO_SRC = `${import.meta.env.BASE_URL}tm-logo.png`;
 
 export default function PostTab() {
   const [sourceImg, setSourceImg] = useState(null);
@@ -39,17 +39,15 @@ export default function PostTab() {
     ctx.fillRect(0, 0, W, headerH);
 
     const logo = logoImgRef.current;
-    const logoSize = Math.round(92 * scale);
+    const logoH = Math.round(92 * scale);
+    const logoW = logo ? Math.round(logoH * (logo.width / logo.height)) : 0;
     const pad = Math.round(40 * scale);
-    if (logo) ctx.drawImage(logo, pad, (headerH - logoSize) / 2, logoSize, logoSize);
-    const textX = logo ? pad + logoSize + 16 * scale : pad;
+    if (logo) ctx.drawImage(logo, pad, (headerH - logoH) / 2, logoW, logoH);
+    const textX = logo ? pad + logoW + 16 * scale : pad;
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = '#ffffff';
     ctx.font = '800 ' + Math.round(30 * scale) + 'px Arial';
-    ctx.fillText('Structures College Peru', textX, headerH / 2 - 4 * scale);
-    ctx.fillStyle = '#F2DF74';
-    ctx.font = '700 ' + Math.round(20 * scale) + 'px Arial';
-    ctx.fillText('TOASTMASTERS INTERNATIONAL', textX, headerH / 2 + 24 * scale);
+    ctx.fillText('Structures College Peru', textX, headerH / 2 + 10 * scale);
 
     ctx.drawImage(img, 0, headerH, img.width, img.height);
 

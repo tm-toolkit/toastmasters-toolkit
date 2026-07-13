@@ -41,16 +41,8 @@ export default function Header({ currentRole = 'ah', sessionPillText = 'No sessi
           className="brand"
           variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
         >
-          <svg className="brand-globe" viewBox="0 0 38 38" fill="none">
-            <circle cx="19" cy="19" r="17" fill="#004165" stroke="#F2DF74" strokeWidth="1.5" />
-            <ellipse cx="19" cy="19" rx="8" ry="17" stroke="#F2DF74" strokeWidth="1" fill="none" />
-            <line x1="2" y1="19" x2="36" y2="19" stroke="#F2DF74" strokeWidth="1" />
-            <line x1="2" y1="13" x2="36" y2="13" stroke="#F2DF74" strokeWidth="0.7" />
-            <line x1="2" y1="25" x2="36" y2="25" stroke="#F2DF74" strokeWidth="0.7" />
-            <rect x="4" y="6" width="30" height="26" rx="2" fill="none" stroke="#F2DF74" strokeWidth="1.5" />
-          </svg>
+          <img className="brand-globe" src={`${import.meta.env.BASE_URL}tm-logo.png`} alt="Toastmasters International" />
           <div className="brand-text">
-            <div className="org">Toastmasters International</div>
             <div className="name">Club Toolkit</div>
             <div className="club">District 222, Peru &nbsp;·&nbsp; Structures College Peru Toastmasters Club</div>
           </div>

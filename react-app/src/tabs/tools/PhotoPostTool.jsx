@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 const LOGO_SRC = `${import.meta.env.BASE_URL}tm-logo.png`;
 
-export default function PostTab() {
+export default function PhotoPostTool() {
   const [sourceImg, setSourceImg] = useState(null);
   const [footerMode, setFooterMode] = useState('full');
   const canvasRef = useRef(null);
@@ -103,11 +103,8 @@ export default function PostTab() {
 
   return (
     <div>
-      <div className="section-head">
-        <h2>Post</h2>
-        <p>Paste, drag, or pick a meeting photo — get it back with the club header and district footer, ready to post.</p>
-        <div className="maroon-line"></div>
-      </div>
+      <h3 className="tool-title">Meeting Photo</h3>
+      <p className="tool-desc">Paste, drag, or pick a meeting photo — get it back with the club header and district footer, ready to post.</p>
 
       {!sourceImg && (
         <div

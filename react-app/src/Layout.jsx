@@ -5,7 +5,7 @@ import RosterTab from './tabs/RosterTab';
 import SessionTab from './tabs/SessionTab';
 import HistoryTab from './tabs/HistoryTab';
 import ChartsTab from './tabs/ChartsTab';
-import PostTab from './tabs/PostTab';
+import OtherToolsTab from './tabs/OtherToolsTab';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 
 // All 5 tabs stay mounted at all times (display:none when inactive) — matching
@@ -64,8 +64,8 @@ export default function Layout() {
             setGsEndpoint={setGsEndpoint}
           />
         </div>
-        <div className={'tab-panel' + (activeTab === 'post' ? ' active' : '')}>
-          <PostTab />
+        <div className={'tab-panel' + (activeTab === 'tools' ? ' active' : '')}>
+          <OtherToolsTab />
         </div>
       </main>
       <footer className="site-footer">

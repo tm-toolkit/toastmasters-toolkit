@@ -3,7 +3,7 @@ const TABS = [
   { id: 'session', label: '⚡ Session' },
   { id: 'history', label: '📋 History' },
   { id: 'charts', label: '📊 Charts' },
-  { id: 'post', label: '📸 Post' },
+  { id: 'tools', label: '🧰 Other Tools' },
 ];
 
 export default function NavTabs({ active, onChange }) {

@@ -29,6 +29,7 @@ function computeColors(elapsed, green, yellow, red) {
 export default function DisplayOverlay() {
   const [state, setState] = useState(null); // last {speaker, typeLabel, elapsed, green, yellow, red, running, done}
   const [obsGuide, setObsGuide] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useBroadcastChannel('tm_display', (data) => { if (data.type === 'timer') setState(data); });
 
@@ -37,6 +38,17 @@ export default function DisplayOverlay() {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.margin = ''; document.body.style.overflow = ''; };
   }, []);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  };
 
   const idle = !state || (!state.running && !state.done && !state.speaker);
   const { speaker = '', typeLabel = '', elapsed = 0, green = 0, yellow = 0, red = 0 } = state || {};
@@ -72,10 +84,16 @@ export default function DisplayOverlay() {
         </div>
       </div>
 
-      {/* OBS GUIDE TOGGLE */}
-      <div style={{ position: 'absolute', top: 16, right: 110, zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }} onClick={() => setObsGuide((v) => !v)}>
-        <div style={{ width: 14, height: 14, border: '1.5px solid rgba(255,255,255,0.3)', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'white', background: obsGuide ? 'rgba(255,255,255,0.2)' : '' }}>{obsGuide ? '✓' : ''}</div>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', fontFamily: 'Montserrat,sans-serif', fontWeight: 600 }}>OBS GUIDE</span>
+      {/* OBS GUIDE TOGGLE + FULLSCREEN */}
+      <div style={{ position: 'absolute', top: 16, right: 110, zIndex: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }} onClick={toggleFullscreen} title="Toggle fullscreen — hides the browser title bar for OBS">
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>{isFullscreen ? '⛶' : '⛶'}</span>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', fontFamily: 'Montserrat,sans-serif', fontWeight: 600 }}>{isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN'}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }} onClick={() => setObsGuide((v) => !v)}>
+          <div style={{ width: 14, height: 14, border: '1.5px solid rgba(255,255,255,0.3)', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'white', background: obsGuide ? 'rgba(255,255,255,0.2)' : '' }}>{obsGuide ? '✓' : ''}</div>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', fontFamily: 'Montserrat,sans-serif', fontWeight: 600 }}>OBS GUIDE</span>
+        </div>
       </div>
 
       {idle ? (

@@ -180,8 +180,8 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
           <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
               ['1', 'Download & install OBS', <>Go to <a href="https://obsproject.com" target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>obsproject.com</a> or search <strong>"OBS Studio"</strong> in the Microsoft Store. Install and open it. No special configuration needed at first launch.</>],
-              ['2', 'Open the Display Window', <>Click <strong>📺 Open Display Window</strong> above. A new browser window will open — this is the screen OBS will capture. The <strong>OBS Guide</strong> box (top right corner) is on by default, showing where to place your camera — click it to toggle off once you're set up.</>],
-              ['3', 'Add a Window Capture in OBS', <>In OBS, under <strong>Sources</strong> → click <strong>+</strong> → select <strong>Window Capture</strong>. In the dropdown, choose the browser window showing the display. Click OK. Right-click the source → <strong>Fit to screen</strong> so it fills the OBS canvas completely.</>],
+              ['2', 'Open the Display Window', <>Click <strong>📺 Open Display Window</strong> above for a quick look — but for actual OBS capture, use the launcher script described in the warning below instead; it opens the display without a Chrome address bar. The <strong>OBS Guide</strong> box (top right corner) is on by default, showing where to place your camera — click it to toggle off once you're set up. There's also a <strong>Fullscreen</strong> toggle next to it to hide the window's title bar too.</>],
+              ['3', 'Add a Window Capture in OBS', <>In OBS, under <strong>Sources</strong> → click <strong>+</strong> → select <strong>Window Capture</strong>. In the dropdown, choose the Display Window. Click OK. Right-click the source → <strong>Fit to screen</strong> so it fills the OBS canvas completely.</>],
               ['4', 'Add your camera on top', <>In OBS → Sources → <strong>+</strong> → <strong>Video Capture Device</strong> → select your webcam. Drag and resize it so it sits exactly over the <em>"PLACE OBS CAMERA HERE"</em> guide in the bottom-right corner.</>],
               ['5', 'Set OBS as your Zoom camera', <>In Zoom → <strong>Settings → Video → Camera</strong> → select <strong>OBS Virtual Camera</strong>. The timer display will now appear as your video background.</>],
             ].map(([n, title, body]) => (
@@ -202,11 +202,25 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
             </div>
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
               <div style={{ minWidth: 26, height: 26, borderRadius: '50%', background: '#e65100', color: 'white', fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>⚠</div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#e65100', marginBottom: 3 }}>Numbers freeze when the Display Window is covered or minimized</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#e65100', marginBottom: 3 }}>Numbers freeze on OBS, or the address bar shows in the capture</div>
                 <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  This is a Windows power-saving feature in Chrome/Edge: it stops repainting a browser window once something covers it — even though OBS is still capturing it — which is why hovering the taskbar icon "unsticks" it for a frame. Chrome removed the <em>chrome://flags</em> toggle for this in version 130, so fix it via a shortcut instead: right-click your Chrome shortcut → <strong>Properties</strong> → in the <strong>Target</strong> field, add a space after the closing quote and paste{' '}
-                  <strong>--disable-features=CalculateNativeWinOcclusion</strong> → <strong>OK</strong>. Fully close all Chrome windows, then reopen Chrome from that shortcut before opening the Display Window — the flag only applies to windows launched after it's set.
+                  Both are Windows/Chrome quirks with plain browser windows: Chrome stops repainting a window once something covers it — even though OBS is still capturing it, which is why hovering the taskbar icon "unsticks" it for a frame — and Chrome now always shows the address bar in popup windows for security, regardless of what a site asks for. Fix both at once with a small launcher script instead of the Display Window button:
+                  <ol style={{ margin: '8px 0', paddingLeft: 18 }}>
+                    <li style={{ marginBottom: 4 }}>Open Notepad, paste this in (swap the URL for wherever the toolkit is hosted for your club):</li>
+                  </ol>
+                  <pre style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px', fontSize: 11, overflowX: 'auto', whiteSpace: 'pre', fontFamily: "'Courier New',monospace", margin: '4px 0 10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+{`@echo off
+taskkill /F /IM chrome.exe >nul 2>&1
+timeout /t 2 /nobreak >nul
+start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows --disable-renderer-backgrounding "https://tm-toolkit.github.io/toastmasters-toolkit/"
+timeout /t 3 /nobreak >nul
+start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --app="https://tm-toolkit.github.io/toastmasters-toolkit/?display=1"`}
+                  </pre>
+                  <ol start={2} style={{ margin: '0', paddingLeft: 18 }}>
+                    <li style={{ marginBottom: 4 }}><strong>File → Save As</strong> → name it <strong>OBS Display.bat</strong>, and set "Save as type" to <strong>All Files</strong> (otherwise Notepad appends .txt).</li>
+                    <li style={{ marginBottom: 4 }}>Double-click it whenever you're setting up OBS — it closes Chrome, reopens the toolkit normally for Session control, and opens the Display Window separately with no address bar. Click the <strong>Fullscreen</strong> toggle inside it (top right) to hide the title bar too, so OBS captures pure content.</li>
+                  </ol>
                 </div>
               </div>
             </div>

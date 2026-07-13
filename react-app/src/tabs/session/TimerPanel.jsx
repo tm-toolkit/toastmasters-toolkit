@@ -205,8 +205,8 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
               <div>
                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#e65100', marginBottom: 3 }}>Numbers freeze when the Display Window is covered or minimized</div>
                 <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  This is a Windows power-saving feature in Chrome/Edge: it stops repainting a browser window once something covers it — even though OBS is still capturing it — which is why hovering the taskbar icon "unsticks" it for a frame. Fix it once: open{' '}
-                  <strong>chrome://flags/#calculate-native-win-occlusion</strong> (paste that in the address bar), set it to <strong>Disabled</strong>, then click <strong>Relaunch</strong>. The Display Window can now sit minimized or behind other windows without freezing.
+                  This is a Windows power-saving feature in Chrome/Edge: it stops repainting a browser window once something covers it — even though OBS is still capturing it — which is why hovering the taskbar icon "unsticks" it for a frame. Chrome removed the <em>chrome://flags</em> toggle for this in version 130, so fix it via a shortcut instead: right-click your Chrome shortcut → <strong>Properties</strong> → in the <strong>Target</strong> field, add a space after the closing quote and paste{' '}
+                  <strong>--disable-features=CalculateNativeWinOcclusion</strong> → <strong>OK</strong>. Fully close all Chrome windows, then reopen Chrome from that shortcut before opening the Display Window — the flag only applies to windows launched after it's set.
                 </div>
               </div>
             </div>

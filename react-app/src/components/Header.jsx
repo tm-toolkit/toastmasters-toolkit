@@ -52,6 +52,7 @@ export default function Header({ currentRole = 'ah', sessionPillText = 'No sessi
           <div className="brand-text">
             <div className="org">Toastmasters International</div>
             <div className="name">Club Toolkit</div>
+            <div className="club">District 222, Peru &nbsp;·&nbsp; Structures College Peru Toastmasters Club</div>
           </div>
         </motion.div>
 

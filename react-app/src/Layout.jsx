@@ -68,6 +68,17 @@ export default function Layout() {
           <PostTab />
         </div>
       </main>
+      <footer className="site-footer">
+        Developed by <strong>Alexander Sandoval</strong> &nbsp;·&nbsp;
+        District 222, Peru &nbsp;·&nbsp;
+        <a
+          href="https://www.toastmasters.org/Find-a-Club/07767436-structures-college-peru-toastmasters-club"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Structures College Peru Toastmasters Club
+        </a>
+      </footer>
     </>
   );
 }

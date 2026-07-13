@@ -18,6 +18,7 @@ header{background:linear-gradient(135deg,var(--maroon-deep),var(--maroon) 60%,va
 .brand-globe{width:36px;height:36px;flex-shrink:0}
 .brand-text .org{font-family:var(--font-head);font-size:10px;font-weight:500;color:rgba(255,255,255,0.7);letter-spacing:0.12em;text-transform:uppercase}
 .brand-text .name{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--white)}
+.brand-text .club{font-family:var(--font-head);font-size:10px;font-weight:500;color:rgba(255,255,255,0.6);letter-spacing:0.02em}
 .header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .role-badge{font-family:var(--font-head);font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.04em}
 .role-badge.ah{background:rgba(242,223,116,0.2);color:var(--yellow);border:1px solid rgba(242,223,116,0.4)}
@@ -162,4 +163,7 @@ tr:hover td{background:#fafafa}
 .toast button{background:var(--yellow);color:#111;border:none;padding:4px 9px;border-radius:4px;cursor:pointer;font-weight:700;font-family:var(--font-head);font-size:11px}
 .empty-state{text-align:center;padding:36px 20px;color:var(--text-muted)}
 .empty-state .icon{font-size:30px;margin-bottom:8px}
+.site-footer{text-align:center;padding:18px 20px;border-top:1px solid var(--border);margin-top:40px;font-family:var(--font-head);font-size:11px;color:var(--text-light);letter-spacing:0.04em}
+.site-footer strong{color:var(--maroon)}
+.site-footer a{color:var(--blue);text-decoration:none;font-weight:600}
 @media(max-width:600px){.header-inner{padding:10px 14px}.nav-tab{padding:10px 11px;font-size:10px}main{padding:14px 12px 60px}.role-selector{flex-wrap:wrap}}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Chart } from 'chart.js/auto';
 import { motion } from 'framer-motion';
+import { toPng } from 'html-to-image';
 import { FILLERS } from '../lib/constants';
 import { secToMmSs } from '../lib/format';
 import { getChartDataByRole, applyFilters } from '../lib/chartData';
@@ -76,9 +77,11 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
   const [dateTo, setDateTo] = useState('');
   const [sheetsData, setSheetsData] = useState([]);
   const [loadStatus, setLoadStatus] = useState(null);
+  const [downloading, setDownloading] = useState(false);
 
   const radarRef = useRef(null), ahLineRef = useRef(null), boxPlotRef = useRef(null), onTimeRef = useRef(null);
   const chartsRef = useRef({});
+  const reportRef = useRef(null);
 
   const ahAll = useMemo(() => getChartDataByRole(history, sheetsData, 'ah'), [history, sheetsData]);
   const timerAll = useMemo(() => getChartDataByRole(history, sheetsData, 'timer'), [history, sheetsData]);
@@ -321,6 +324,29 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
     setLoadStatus({ msg: `✓ Loaded ${rows.length} row(s) from Sheets.`, type: 'ok' });
   }, [gsEndpoint]);
 
+  const handleDownloadReport = useCallback(async () => {
+    if (!reportRef.current || downloading) return;
+    setDownloading(true);
+    try {
+      const dataUrl = await toPng(reportRef.current, {
+        backgroundColor: '#F5F5F5',
+        pixelRatio: 2,
+        filter: (node) => node.tagName !== 'BUTTON',
+      });
+      const dateSuffix = dateFrom || dateTo
+        ? `${dateFrom || 'start'}_to_${dateTo || 'now'}`
+        : new Date().toISOString().slice(0, 10);
+      const link = document.createElement('a');
+      link.download = `toastmasters-report-${dateSuffix}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch {
+      setLoadStatus({ msg: 'Could not generate the PNG — try again.', type: 'err' });
+    } finally {
+      setDownloading(false);
+    }
+  }, [downloading, dateFrom, dateTo]);
+
   const statusColors = { ok: ['#e8f5e9', '#2e7d32'], err: ['#fce4ec', '#c62828'], info: ['#e3f2fd', '#1565c0'] };
 
   return (
@@ -365,6 +391,9 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
             value={gsEndpoint} onChange={(e) => setGsEndpoint(e.target.value)} />
         </div>
         <button className="btn-b" style={{ alignSelf: 'flex-end' }} onClick={handleLoadFromSheets}>↓ Load from Sheets</button>
+        <button className="btn-s" style={{ alignSelf: 'flex-end', height: 35, marginLeft: 'auto' }} onClick={handleDownloadReport} disabled={downloading}>
+          {downloading ? 'Generating…' : '⬇ Download report (PNG)'}
+        </button>
       </div>
       {loadStatus && (
         <div style={{ fontSize: 12, fontFamily: 'var(--font-head)', fontWeight: 600, padding: '6px 12px', borderRadius: 'var(--radius)', marginBottom: 12, display: 'block', background: statusColors[loadStatus.type][0], color: statusColors[loadStatus.type][1] }}>
@@ -372,37 +401,39 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
         </div>
       )}
 
-      <div style={{ display: viewMode === 'ah' || viewMode === 'both' ? '' : 'none' }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, color: 'var(--maroon)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>🎙 Ah Counter</span><div style={{ flex: 1, height: 1, background: 'var(--border-light)' }}></div>
+      <div ref={reportRef}>
+        <div style={{ display: viewMode === 'ah' || viewMode === 'both' ? '' : 'none' }}>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, color: 'var(--maroon)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>🎙 Ah Counter</span><div style={{ flex: 1, height: 1, background: 'var(--border-light)' }}></div>
+          </div>
+          <StatGrid stats={ahStats} />
+          <div className="chart-wrap">
+            <div className="chart-title">Filler breakdown by speaker</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>One bar per speaker, ranked by total fillers. Segment color shows which filler word — segment width shows how many times.</div>
+            <div style={{ maxWidth: 640, margin: '0 auto', position: 'relative', height: 340 }}><canvas ref={radarRef}></canvas></div>
+          </div>
+          <div className="chart-wrap">
+            <div className="chart-title">Total fillers per meeting</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>Each point is one meeting. A downward trend means the club is improving over time.</div>
+            <canvas ref={ahLineRef} height="90"></canvas>
+          </div>
         </div>
-        <StatGrid stats={ahStats} />
-        <div className="chart-wrap">
-          <div className="chart-title">Filler breakdown by speaker</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>One bar per speaker, ranked by total fillers. Segment color shows which filler word — segment width shows how many times.</div>
-          <div style={{ maxWidth: 640, margin: '0 auto', position: 'relative', height: 340 }}><canvas ref={radarRef}></canvas></div>
-        </div>
-        <div className="chart-wrap">
-          <div className="chart-title">Total fillers per meeting</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>Each point is one meeting. A downward trend means the club is improving over time.</div>
-          <canvas ref={ahLineRef} height="90"></canvas>
-        </div>
-      </div>
 
-      <div style={{ marginTop: 8, display: viewMode === 'timer' || viewMode === 'both' ? '' : 'none' }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>⏱ Timer</span><div style={{ flex: 1, height: 1, background: 'var(--border-light)' }}></div>
-        </div>
-        <StatGrid stats={timerStats} />
-        <div className="chart-wrap">
-          <div className="chart-title">Speech time distribution by category</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>Box shows median and spread of speech times per category. Each dot is one speech. Green band = within time range. When few data points exist, all dots are shown individually.</div>
-          <canvas ref={boxPlotRef} height="130"></canvas>
-        </div>
-        <div className="chart-wrap">
-          <div className="chart-title">On-time rate by speaker</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>% of speeches where the speaker finished between green and red. 🟢 ≥80% · 🟡 ≥50% · 🔴 below 50%.</div>
-          <canvas ref={onTimeRef} height="90"></canvas>
+        <div style={{ marginTop: 8, display: viewMode === 'timer' || viewMode === 'both' ? '' : 'none' }}>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>⏱ Timer</span><div style={{ flex: 1, height: 1, background: 'var(--border-light)' }}></div>
+          </div>
+          <StatGrid stats={timerStats} />
+          <div className="chart-wrap">
+            <div className="chart-title">Speech time distribution by category</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>Box shows median and spread of speech times per category. Each dot is one speech. Green band = within time range. When few data points exist, all dots are shown individually.</div>
+            <canvas ref={boxPlotRef} height="130"></canvas>
+          </div>
+          <div className="chart-wrap">
+            <div className="chart-title">On-time rate by speaker</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>% of speeches where the speaker finished between green and red. 🟢 ≥80% · 🟡 ≥50% · 🔴 below 50%.</div>
+            <canvas ref={onTimeRef} height="90"></canvas>
+          </div>
         </div>
       </div>
     </div>

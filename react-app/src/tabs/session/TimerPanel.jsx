@@ -180,7 +180,7 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
           <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
               ['1', 'Download & install OBS', <>Go to <a href="https://obsproject.com" target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>obsproject.com</a> or search <strong>"OBS Studio"</strong> in the Microsoft Store. Install and open it. No special configuration needed at first launch.</>],
-              ['2', 'Open the Display Window', <>Click <strong>📺 Open Display Window</strong> above. A new browser window will open — this is the screen OBS will capture. Before continuing, <strong>enable the OBS Guide checkbox</strong> inside that window (top right corner) so you can see where to place your camera.</>],
+              ['2', 'Open the Display Window', <>Click <strong>📺 Open Display Window</strong> above. A new browser window will open — this is the screen OBS will capture. The <strong>OBS Guide</strong> box (top right corner) is on by default, showing where to place your camera — click it to toggle off once you're set up.</>],
               ['3', 'Add a Window Capture in OBS', <>In OBS, under <strong>Sources</strong> → click <strong>+</strong> → select <strong>Window Capture</strong>. In the dropdown, choose the browser window showing the display. Click OK. Right-click the source → <strong>Fit to screen</strong> so it fills the OBS canvas completely.</>],
               ['4', 'Add your camera on top', <>In OBS → Sources → <strong>+</strong> → <strong>Video Capture Device</strong> → select your webcam. Drag and resize it so it sits exactly over the <em>"PLACE OBS CAMERA HERE"</em> guide in the bottom-right corner.</>],
               ['5', 'Set OBS as your Zoom camera', <>In Zoom → <strong>Settings → Video → Camera</strong> → select <strong>OBS Virtual Camera</strong>. The timer display will now appear as your video background.</>],
@@ -198,6 +198,16 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
               <div>
                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#e65100', marginBottom: 3 }}>Disable auto-framing in Zoom</div>
                 <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>In Zoom → Settings → Video → uncheck <strong>"Auto-adjust my video"</strong> or <strong>"Auto-frame my video"</strong>. If left on, Zoom will detect your face and zoom in, cutting off the timer display.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 26, height: 26, borderRadius: '50%', background: '#e65100', color: 'white', fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>⚠</div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#e65100', marginBottom: 3 }}>Numbers freeze when the Display Window is covered or minimized</div>
+                <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  This is a Windows power-saving feature in Chrome/Edge: it stops repainting a browser window once something covers it — even though OBS is still capturing it — which is why hovering the taskbar icon "unsticks" it for a frame. Fix it once: open{' '}
+                  <strong>chrome://flags/#calculate-native-win-occlusion</strong> (paste that in the address bar), set it to <strong>Disabled</strong>, then click <strong>Relaunch</strong>. The Display Window can now sit minimized or behind other windows without freezing.
+                </div>
               </div>
             </div>
           </div>

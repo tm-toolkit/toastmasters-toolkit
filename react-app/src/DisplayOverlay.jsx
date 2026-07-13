@@ -28,7 +28,7 @@ function computeColors(elapsed, green, yellow, red) {
 
 export default function DisplayOverlay() {
   const [state, setState] = useState(null); // last {speaker, typeLabel, elapsed, green, yellow, red, running, done}
-  const [obsGuide, setObsGuide] = useState(false);
+  const [obsGuide, setObsGuide] = useState(true);
 
   useBroadcastChannel('tm_display', (data) => { if (data.type === 'timer') setState(data); });
 
@@ -109,28 +109,30 @@ export default function DisplayOverlay() {
         </div>
       )}
 
-      {!idle && (
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 24px 20px', background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ position: 'relative', height: 20, marginBottom: 4 }}>
-                <span style={{ position: 'absolute', left: 0, transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>START</span>
-                <span style={{ position: 'absolute', left: pctG + '%', transform: 'translateX(-50%)', fontSize: 9, color: '#43a047', fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{secToMmSs(green)}</span>
-                <span style={{ position: 'absolute', left: pctY + '%', transform: 'translateX(-50%)', fontSize: 9, color: '#f9a825', fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{secToMmSs(yellow)}</span>
-                <span style={{ position: 'absolute', right: 0, transform: 'translateX(50%)', fontSize: 9, color: '#e53935', fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{secToMmSs(red)}</span>
+      {(!idle || obsGuide) && (
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 24px 20px', background: !idle ? 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)' : 'transparent' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', gap: 16 }}>
+            {!idle && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ position: 'relative', height: 20, marginBottom: 4 }}>
+                  <span style={{ position: 'absolute', left: 0, transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>START</span>
+                  <span style={{ position: 'absolute', left: pctG + '%', transform: 'translateX(-50%)', fontSize: 9, color: '#43a047', fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{secToMmSs(green)}</span>
+                  <span style={{ position: 'absolute', left: pctY + '%', transform: 'translateX(-50%)', fontSize: 9, color: '#f9a825', fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{secToMmSs(yellow)}</span>
+                  <span style={{ position: 'absolute', right: 0, transform: 'translateX(50%)', fontSize: 9, color: '#e53935', fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{secToMmSs(red)}</span>
+                </div>
+                <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3 }}>
+                  <div style={{ height: '100%', borderRadius: 3, transition: 'width 1s linear,background .5s', width: pctNow + '%', background: colors.bar }}></div>
+                  <div style={{ position: 'absolute', top: -6, width: 2, height: 18, background: '#43a047', borderRadius: 1, opacity: 0.8, transform: 'translateX(-50%)', left: pctG + '%' }}></div>
+                  <div style={{ position: 'absolute', top: -6, width: 2, height: 18, background: '#f9a825', borderRadius: 1, opacity: 0.8, transform: 'translateX(-50%)', left: pctY + '%' }}></div>
+                  <div style={{ position: 'absolute', top: -6, right: 0, width: 2, height: 18, background: '#e53935', borderRadius: 1, opacity: 0.8 }}></div>
+                  <div style={{ position: 'absolute', top: '50%', width: 14, height: 14, borderRadius: '50%', background: colors.dot, border: '2px solid rgba(0,0,0,0.4)', transform: 'translate(-50%,-50%)', transition: 'left 1s linear,background .5s', left: pctNow + '%' }}></div>
+                </div>
               </div>
-              <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3 }}>
-                <div style={{ height: '100%', borderRadius: 3, transition: 'width 1s linear,background .5s', width: pctNow + '%', background: colors.bar }}></div>
-                <div style={{ position: 'absolute', top: -6, width: 2, height: 18, background: '#43a047', borderRadius: 1, opacity: 0.8, transform: 'translateX(-50%)', left: pctG + '%' }}></div>
-                <div style={{ position: 'absolute', top: -6, width: 2, height: 18, background: '#f9a825', borderRadius: 1, opacity: 0.8, transform: 'translateX(-50%)', left: pctY + '%' }}></div>
-                <div style={{ position: 'absolute', top: -6, right: 0, width: 2, height: 18, background: '#e53935', borderRadius: 1, opacity: 0.8 }}></div>
-                <div style={{ position: 'absolute', top: '50%', width: 14, height: 14, borderRadius: '50%', background: colors.dot, border: '2px solid rgba(0,0,0,0.4)', transform: 'translate(-50%,-50%)', transition: 'left 1s linear,background .5s', left: pctNow + '%' }}></div>
-              </div>
-            </div>
+            )}
             {obsGuide && (
-              <div style={{ width: 200, height: 112, flexShrink: 0, border: '2px dashed rgba(255,255,255,0.25)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4, background: 'rgba(255,255,255,0.03)' }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textAlign: 'center' }}>PLACE OBS CAMERA HERE</div>
-                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em' }}>16:9</div>
+              <div style={{ width: 280, height: 158, flexShrink: 0, border: '2px dashed rgba(255,255,255,0.25)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4, background: 'rgba(255,255,255,0.03)' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textAlign: 'center' }}>PLACE OBS CAMERA HERE</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em' }}>16:9</div>
               </div>
             )}
           </div>

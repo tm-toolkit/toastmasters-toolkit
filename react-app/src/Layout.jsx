@@ -18,6 +18,8 @@ export default function Layout() {
   const [currentRole, setCurrentRole] = useLocalStorageState('tmRole', 'ah', { raw: true });
   const [history, setHistory] = useLocalStorageState('tmHistory', []);
   const [gsEndpoint, setGsEndpoint] = useLocalStorageState('gsEndpoint', '', { raw: true });
+  const [userName, setUserName] = useLocalStorageState('tmUserName', '', { raw: true });
+  const [userPosition, setUserPosition] = useLocalStorageState('tmUserPosition', 'Club Member', { raw: true });
   const [ahCount, setAhCount] = useState(0);
   const [timerCount, setTimerCount] = useState(0);
 
@@ -36,6 +38,10 @@ export default function Layout() {
             setRoster={setRoster}
             currentRole={currentRole}
             setCurrentRole={setCurrentRole}
+            userName={userName}
+            setUserName={setUserName}
+            userPosition={userPosition}
+            setUserPosition={setUserPosition}
             onGoToSession={() => setActiveTab('session')}
           />
         </div>
@@ -65,7 +71,7 @@ export default function Layout() {
           />
         </div>
         <div className={'tab-panel' + (activeTab === 'tools' ? ' active' : '')}>
-          <OtherToolsTab />
+          <OtherToolsTab userPosition={userPosition} />
         </div>
       </main>
       <footer className="site-footer">

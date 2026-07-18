@@ -30,6 +30,11 @@ export default function DisplayOverlay() {
   const [state, setState] = useState(null); // last {speaker, typeLabel, elapsed, green, yellow, red, running, done}
   const [obsGuide, setObsGuide] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Read once on mount — this window shares localStorage with the main toolkit
+  // tab (same origin), but isn't part of its React tree, so it can't receive
+  // these as props. Set once on the Roster tab before opening the display.
+  const [userName] = useState(() => localStorage.getItem('tmUserName') || '');
+  const [userPosition] = useState(() => localStorage.getItem('tmUserPosition') || '');
 
   useBroadcastChannel('tm_display', (data) => { if (data.type === 'timer') setState(data); });
 
@@ -64,17 +69,15 @@ export default function DisplayOverlay() {
       {/* TOP BAR */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <svg width="40" height="40" viewBox="0 0 38 38" fill="none">
-            <circle cx="19" cy="19" r="17" fill="#004165" stroke="#F2DF74" strokeWidth="1.5" />
-            <ellipse cx="19" cy="19" rx="8" ry="17" stroke="#F2DF74" strokeWidth="1" fill="none" />
-            <line x1="2" y1="19" x2="36" y2="19" stroke="#F2DF74" strokeWidth="1" />
-            <line x1="2" y1="13" x2="36" y2="13" stroke="#F2DF74" strokeWidth="0.7" />
-            <line x1="2" y1="25" x2="36" y2="25" stroke="#F2DF74" strokeWidth="0.7" />
-            <rect x="4" y="6" width="30" height="26" rx="2" fill="none" stroke="#F2DF74" strokeWidth="1.5" />
-          </svg>
+          <img src={`${import.meta.env.BASE_URL}tm-logo.png`} alt="Toastmasters International" style={{ height: 40, width: 'auto' }} />
           <div>
             <div style={{ fontSize: 9, fontWeight: 500, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Toastmasters International</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.06em' }}>Timer</div>
+            {userName && (
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.02em', marginTop: 2 }}>
+                {userName}{userPosition ? ` · ${userPosition}` : ''}
+              </div>
+            )}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>

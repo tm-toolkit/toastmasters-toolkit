@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { OFFICER_POSITIONS } from '../lib/constants';
 
 // Note: "Sadith Lopez" is duplicated here on purpose — it matches the
 // original list exactly (parity with the vanilla toolkit's DEFAULT_MEMBERS).
@@ -14,7 +15,7 @@ function initials(name) {
   return name.trim().split(/\s+/).map((w) => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
-export default function RosterTab({ roster, setRoster, currentRole, setCurrentRole, onGoToSession }) {
+export default function RosterTab({ roster, setRoster, currentRole, setCurrentRole, userName, setUserName, userPosition, setUserPosition, onGoToSession }) {
   const [nameInput, setNameInput] = useState('');
   // Resets every mount, same as the vanilla app's loadDefaultMembers() — this
   // tracks today's chip selection, independent of what's already in the roster.
@@ -65,6 +66,26 @@ export default function RosterTab({ roster, setRoster, currentRole, setCurrentRo
         <h2>Today&apos;s Meeting</h2>
         <p>Set your role first, then add the members for today</p>
         <div className="maroon-line"></div>
+      </div>
+
+      <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '13px 16px', marginBottom: 16, boxShadow: 'var(--shadow)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div className="fg" style={{ minWidth: 200 }}>
+          <span className="fl">Your name</span>
+          <input
+            className="fi" type="text" placeholder="e.g. Alexander Sandoval"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+          />
+        </div>
+        <div className="fg" style={{ minWidth: 220 }}>
+          <span className="fl">Position</span>
+          <select className="fs" value={userPosition} onChange={(e) => setUserPosition(e.target.value)}>
+            {OFFICER_POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', paddingBottom: 9, maxWidth: 260 }}>
+          Shown on the Display Window and pre-filled into the Zoom Background tool.
+        </div>
       </div>
 
       <div className="role-selector">

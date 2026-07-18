@@ -7,7 +7,7 @@ const TOOLS = [
   { id: 'zoom', label: '🖥 Zoom Background', Component: ZoomBackgroundTool },
 ];
 
-export default function OtherToolsTab() {
+export default function OtherToolsTab({ userPosition }) {
   const [activeTool, setActiveTool] = useState('photo');
   const { Component } = TOOLS.find((t) => t.id === activeTool);
 
@@ -31,7 +31,7 @@ export default function OtherToolsTab() {
         ))}
       </div>
 
-      <Component />
+      <Component defaultPosition={userPosition} />
     </div>
   );
 }

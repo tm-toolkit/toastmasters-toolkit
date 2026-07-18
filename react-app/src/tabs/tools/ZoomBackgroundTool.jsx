@@ -1,19 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { OFFICER_POSITIONS } from '../../lib/constants';
 
 const TEMPLATE_SRC = `${import.meta.env.BASE_URL}zoom-template.png`;
-
-// Alphabetical — matches the club's officer roles plus the general member option.
-const ROLES = [
-  'Club Member',
-  'Club President',
-  'Club Secretary',
-  'Club Treasurer',
-  'Sergeant at Arms',
-  'Vice President Education',
-  'Vice President Membership',
-  'Vice President Public Relations',
-];
 
 // Calibrated to sit directly under the template's "DISTRICT 222 · PERU" line,
 // matching its font, size, color, and letter-spacing.
@@ -27,8 +16,8 @@ function slugify(text) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
-export default function ZoomBackgroundTool() {
-  const [role, setRole] = useState(ROLES[0]);
+export default function ZoomBackgroundTool({ defaultPosition }) {
+  const [position, setPosition] = useState(defaultPosition || OFFICER_POSITIONS[0]);
   const [ready, setReady] = useState(false);
   const canvasRef = useRef(null);
   const templateImgRef = useRef(null);
@@ -55,18 +44,18 @@ export default function ZoomBackgroundTool() {
     ctx.fillStyle = GOLD;
     ctx.textBaseline = 'alphabetic';
     let x = LINE_X;
-    for (const ch of role.toUpperCase()) {
+    for (const ch of position.toUpperCase()) {
       ctx.fillText(ch, x, LINE_BASELINE_Y);
       x += ctx.measureText(ch).width + TRACKING;
     }
-  }, [role]);
+  }, [position]);
 
-  useEffect(() => { if (ready) render(); }, [ready, role, render]);
+  useEffect(() => { if (ready) render(); }, [ready, position, render]);
 
   const downloadImage = () => {
     const canvas = canvasRef.current;
     const link = document.createElement('a');
-    link.download = `zoom-background-${slugify(role)}.png`;
+    link.download = `zoom-background-${slugify(position)}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -74,12 +63,12 @@ export default function ZoomBackgroundTool() {
   return (
     <div>
       <h3 className="tool-title">Zoom Background</h3>
-      <p className="tool-desc">Pick your role — get your personalized virtual background with the club's official branding, ready to set in Zoom.</p>
+      <p className="tool-desc">Pick your position — get your personalized virtual background with the club's official branding, ready to set in Zoom.</p>
 
       <div className="fg" style={{ maxWidth: 320 }}>
-        <span className="fl">Role</span>
-        <select className="fs" value={role} onChange={(e) => setRole(e.target.value)}>
-          {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+        <span className="fl">Position</span>
+        <select className="fs" value={position} onChange={(e) => setPosition(e.target.value)}>
+          {OFFICER_POSITIONS.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
       </div>
 

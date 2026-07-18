@@ -8,6 +8,10 @@ function setup(overrides = {}) {
     setRoster: vi.fn(),
     currentRole: 'ah',
     setCurrentRole: vi.fn(),
+    userName: '',
+    setUserName: vi.fn(),
+    userPosition: 'Club Member',
+    setUserPosition: vi.fn(),
     onGoToSession: vi.fn(),
     ...overrides,
   };

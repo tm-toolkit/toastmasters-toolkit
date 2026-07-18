@@ -105,7 +105,7 @@ export default function RosterTab({ roster, setRoster, currentRole, setCurrentRo
         <div className="fg">
           <span className="fl">Member name</span>
           <input
-            className="fi" type="text" placeholder="e.g. Carlos Mendoza"
+            className="fi" type="text" placeholder="e.g. Ralph Smedley"
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') addToRoster(); }}

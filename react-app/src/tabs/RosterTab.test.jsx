@@ -38,7 +38,7 @@ describe('RosterTab', () => {
 
   it('calls setRoster with the new member when "+ Add Member" is clicked', () => {
     const { setRoster } = setup();
-    fireEvent.change(screen.getByPlaceholderText('e.g. Carlos Mendoza'), { target: { value: 'Sara Cueva' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. Ralph Smedley')[1], { target: { value: 'Sara Cueva' } });
     fireEvent.click(screen.getByText('+ Add Member'));
     expect(setRoster).toHaveBeenCalledWith([{ name: 'Sara Cueva' }]);
   });
@@ -52,7 +52,7 @@ describe('RosterTab', () => {
   it('warns instead of adding a name already in the roster (case-insensitive)', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     const { setRoster } = setup({ roster: [{ name: 'Erika Fernandez' }] });
-    fireEvent.change(screen.getByPlaceholderText('e.g. Carlos Mendoza'), { target: { value: 'erika fernandez' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. Ralph Smedley')[1], { target: { value: 'erika fernandez' } });
     fireEvent.click(screen.getByText('+ Add Member'));
     expect(alertSpy).toHaveBeenCalledWith('Already in roster.');
     expect(setRoster).not.toHaveBeenCalled();

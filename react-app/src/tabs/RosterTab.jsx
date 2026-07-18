@@ -72,7 +72,7 @@ export default function RosterTab({ roster, setRoster, currentRole, setCurrentRo
         <div className="fg" style={{ minWidth: 200 }}>
           <span className="fl">Your name</span>
           <input
-            className="fi" type="text" placeholder="e.g. Alexander Sandoval"
+            className="fi" type="text" placeholder="e.g. Ralph Smedley"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
           />

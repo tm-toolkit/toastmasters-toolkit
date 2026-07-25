@@ -159,10 +159,13 @@ export default function TimerVideoTool() {
     }, 1000);
   }, [speakerName, typeLabel, green, yellow, red, totalRecordSec, videoUrl]);
 
-  const cancelRecording = () => {
+  // Stops early and keeps whatever was recorded so far — e.g. skip the extra
+  // minute of "TIME IS UP" tail. Recording finishes via recorder.onstop above,
+  // which is what actually flips status to 'done'; setting status here too
+  // would race the (async) stop event and could stomp its result.
+  const stopRecording = () => {
     clearInterval(intervalRef.current);
     if (recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop();
-    setStatus('idle');
   };
 
   const downloadName = `zoom-timer-${slugify(typeLabel)}${speakerName ? '-' + slugify(speakerName) : ''}.webm`;
@@ -173,7 +176,8 @@ export default function TimerVideoTool() {
       <p className="tool-desc">
         Generates a countdown video you download once and set directly as a Zoom Video Virtual Background —
         no OBS, no window capture, nothing to configure in Zoom beyond picking the file. The trade-off: it
-        records in real time, so making one takes as long as the timer itself (shown below).
+        records in real time — but you can hit "Stop &amp; Download" at any point and keep what's recorded
+        so far, you don't have to wait for the full length shown below.
       </p>
 
       {status === 'unsupported' && (
@@ -215,6 +219,7 @@ export default function TimerVideoTool() {
         {status === 'recording' && (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-head)', fontWeight: 600 }}>
             Recording… {secToMmSs(elapsedSec)} / {secToMmSs(totalRecordSec)} — keep this tab open and visible.
+            You don't have to wait for the end — "Stop & Download" below uses whatever's recorded so far.
           </div>
         )}
 
@@ -225,7 +230,7 @@ export default function TimerVideoTool() {
             </motion.button>
           )}
           {status === 'recording' && (
-            <motion.button className="btn-s" whileTap={{ scale: 0.96 }} onClick={cancelRecording}>✕ Cancel</motion.button>
+            <motion.button className="btn-s" whileTap={{ scale: 0.96 }} onClick={stopRecording}>⏹ Stop &amp; Download</motion.button>
           )}
           {status === 'done' && videoUrl && (
             <motion.a

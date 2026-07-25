@@ -5,7 +5,7 @@ import { toPng } from 'html-to-image';
 import { FILLERS } from '../lib/constants';
 import { secToMmSs } from '../lib/format';
 import { getChartDataByRole, applyFilters } from '../lib/chartData';
-import { FILLER_COLORS } from '../lib/chartHelpers';
+import { FILLER_COLORS, CATS, fmtDateShort } from '../lib/chartHelpers';
 import { loadFromSheets } from '../lib/googleSheets';
 
 function StatGrid({ stats }) {
@@ -82,6 +82,8 @@ function speechStatus(r) {
   return 'good';
 }
 
+const dateCompare = (a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0);
+
 function SpeakerTimeReport({ timerRaw }) {
   const speakers = useMemo(() => [...new Set(timerRaw.map((r) => r.speaker))].sort(), [timerRaw]);
 
@@ -99,25 +101,47 @@ function SpeakerTimeReport({ timerRaw }) {
           </div>
         ))}
       </div>
-      {speakers.map((sp) => {
-        const recs = [...timerRaw.filter((r) => r.speaker === sp)].sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
-        const withinCount = recs.filter((r) => speechStatus(r) === 'good').length;
-        return (
-          <div key={sp} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 150, fontWeight: 600, fontSize: 13, fontFamily: 'var(--font-head)' }}>{sp}</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {recs.map((r, i) => (
-                <span
-                  key={i}
-                  title={`${r.category} · ${r.date} · ${secToMmSs(r.elapsed)} — ${STATUS_LABEL[speechStatus(r)]}`}
-                  style={{ width: 16, height: 16, borderRadius: '50%', background: STATUS_COLOR[speechStatus(r)], display: 'inline-block', cursor: 'default' }}
-                ></span>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '6px 10px 10px 4px', borderBottom: '2px solid var(--border)' }}></th>
+              {CATS.map((cat) => (
+                <th key={cat} style={{ textAlign: 'left', padding: '6px 10px 10px', borderBottom: '2px solid var(--border)', color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-head)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{cat}</th>
               ))}
-            </div>
-            <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{withinCount}/{recs.length} within time</div>
-          </div>
-        );
-      })}
+              <th style={{ textAlign: 'left', padding: '6px 10px 10px', borderBottom: '2px solid var(--border)', color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-head)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Within time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {speakers.map((sp) => {
+              const recs = [...timerRaw.filter((r) => r.speaker === sp)].sort(dateCompare);
+              const withinCount = recs.filter((r) => speechStatus(r) === 'good').length;
+              return (
+                <tr key={sp} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                  <td style={{ padding: '10px 10px 10px 4px', fontWeight: 600, fontFamily: 'var(--font-head)', fontSize: 13, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{sp}</td>
+                  {CATS.map((cat) => (
+                    <td key={cat} style={{ padding: '10px', verticalAlign: 'top' }}>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        {recs.filter((r) => r.category === cat).map((r, i) => (
+                          <div
+                            key={i}
+                            title={`${r.category} · ${r.date} · ${secToMmSs(r.elapsed)} — ${STATUS_LABEL[speechStatus(r)]}`}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}
+                          >
+                            <span style={{ width: 14, height: 14, borderRadius: '50%', background: STATUS_COLOR[speechStatus(r)], display: 'inline-block', cursor: 'default' }}></span>
+                            <span style={{ fontSize: 9, color: 'var(--text-light)', whiteSpace: 'nowrap' }}>{fmtDateShort(r.date)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  ))}
+                  <td style={{ padding: '10px', verticalAlign: 'top', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{withinCount}/{recs.length}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -332,7 +356,7 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
           <StatGrid stats={timerStats} />
           <div className="chart-wrap">
             <div className="chart-title">Speaker time report</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>Each dot is one speech, in order, colored the same way the live Timer colors it.</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>One row per speaker, one column per category. Each dot is a speech with its date, colored the same way the live Timer colors it.</div>
             <SpeakerTimeReport timerRaw={timerRaw} />
           </div>
         </div>

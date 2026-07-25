@@ -24,6 +24,13 @@ export function boxStats(arr) {
   return { min, q1, med, q3, max, all: arr };
 }
 
+// Short MM/DD/YY for compact table cells — fmtDate() gives the sortable ISO form.
+export function fmtDateShort(val) {
+  const iso = fmtDate(val);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : (val || '');
+}
+
 export function fmtDate(val) {
   if (!val) return '';
   if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) return val;

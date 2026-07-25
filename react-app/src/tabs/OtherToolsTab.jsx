@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import PhotoPostTool from './tools/PhotoPostTool';
 import ZoomBackgroundTool from './tools/ZoomBackgroundTool';
+import TimerVideoTool from './tools/TimerVideoTool';
 
 const TOOLS = [
   { id: 'photo', label: '📸 Meeting Photo', Component: PhotoPostTool },
   { id: 'zoom', label: '🖥 Zoom Background', Component: ZoomBackgroundTool },
+  { id: 'timervideo', label: '⏱ Timer Video', Component: TimerVideoTool },
 ];
 
 export default function OtherToolsTab({ userPosition }) {

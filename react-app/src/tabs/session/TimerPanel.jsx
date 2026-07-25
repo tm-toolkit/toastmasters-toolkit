@@ -31,7 +31,7 @@ function timerColorClass(elapsed, green, yellow, red) {
   return '';
 }
 
-export default function TimerPanel({ roster, history, setHistory, onCountChange }) {
+export default function TimerPanel({ roster, history, setHistory, onCountChange, onGoToOtherTools }) {
   const [queue, setQueue] = useState([]);
   const [log, setLog] = useState([]);
   const [activeIdx, setActiveIdx] = useState(-1);
@@ -161,6 +161,14 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
           <div className="maroon-line"></div>
         </div>
         <button className="btn-b" onClick={openDisplayWindow} style={{ alignSelf: 'center', marginTop: 6 }}>📺 Open Display Window</button>
+      </div>
+
+      <div style={{ background: '#e3f2fd', border: '1px solid #90caf9', borderRadius: 'var(--radius-lg)', padding: '13px 16px', marginBottom: 14, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#1565c0', marginBottom: 3 }}>Don't want to deal with OBS?</div>
+          <div style={{ fontSize: 12, color: '#1565c0' }}>Generate a countdown video instead — download it once and set it directly as your Zoom Virtual Background.</div>
+        </div>
+        <button className="btn-b" onClick={onGoToOtherTools} style={{ flexShrink: 0 }}>⏱ Try Timer Video</button>
       </div>
 
       <details style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: 0, marginBottom: 14, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>

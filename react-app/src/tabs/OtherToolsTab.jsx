@@ -9,7 +9,7 @@ const TOOLS = [
   { id: 'timervideo', label: '⏱ Timer Video', Component: TimerVideoTool },
 ];
 
-export default function OtherToolsTab({ userPosition }) {
+export default function OtherToolsTab({ userPosition, roster }) {
   const [activeTool, setActiveTool] = useState('photo');
   const { Component } = TOOLS.find((t) => t.id === activeTool);
 
@@ -33,7 +33,7 @@ export default function OtherToolsTab({ userPosition }) {
         ))}
       </div>
 
-      <Component defaultPosition={userPosition} />
+      <Component defaultPosition={userPosition} roster={roster} />
     </div>
   );
 }

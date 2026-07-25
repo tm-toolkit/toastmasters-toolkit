@@ -72,7 +72,7 @@ export default function Layout() {
           />
         </div>
         <div className={'tab-panel' + (activeTab === 'tools' ? ' active' : '')}>
-          <OtherToolsTab userPosition={userPosition} />
+          <OtherToolsTab userPosition={userPosition} roster={roster} />
         </div>
       </main>
       <footer className="site-footer">

@@ -13,8 +13,8 @@ const W = 1280, H = 720;
 const OVERTIME_BUFFER_SEC = 120;
 
 const FONT_WEIGHTS = [
-  '500 9px Montserrat', '700 12px Montserrat', '700 20px Montserrat', '600 10px Montserrat',
-  '700 68px Montserrat', '700 13px Montserrat', '600 8px Montserrat',
+  '500 9px Montserrat', '700 12px Montserrat', '700 14px Montserrat', '600 9px Montserrat',
+  '700 46px Montserrat', '700 11px Montserrat', '700 13px Montserrat', '600 8px Montserrat',
 ];
 
 function slugify(text) {
@@ -43,58 +43,67 @@ function drawFrame(ctx, logoImg, { speakerName, typeLabel, elapsed, green, yello
   ctx.font = '700 12px Montserrat';
   ctx.fillText('TIMER', textX, 46);
 
-  // Everything lives in a band across the top ~40% of the frame. Zoom's
-  // virtual background puts the actual person — face included — roughly
-  // centered in the frame, so nothing important can sit at vertical center
-  // the way it does on the live Display Window (which layers a *separate*,
-  // small camera box via OBS instead of a full-body cutout).
-  ctx.textAlign = 'center';
-  let cy = 90;
+  // Zoom's virtual background composites the actual person — full body,
+  // face included — and even when it sits in the "top 30%" band by the
+  // numbers, a large horizontally-centered clock still reads as the visual
+  // center of the frame. So nothing sits on the center line at all, in
+  // either direction: nothing hugs the top-right corner, mirroring the
+  // logo's top-left corner, and the rest hugs the left/right edges below.
+  ctx.textAlign = 'right';
+  let cy = 30;
   if (speakerName) {
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.font = '700 20px Montserrat';
-    ctx.fillText(speakerName, W / 2, cy);
-    cy += 22;
+    ctx.font = '700 14px Montserrat';
+    ctx.fillText(speakerName, W - 24, cy);
+    cy += 18;
   }
   ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.font = '600 10px Montserrat';
-  ctx.fillText(typeLabel.toUpperCase(), W / 2, cy);
+  ctx.font = '600 9px Montserrat';
+  ctx.fillText(typeLabel.toUpperCase(), W - 24, cy);
 
   ctx.fillStyle = colors.clock;
-  ctx.font = '700 68px Montserrat';
-  ctx.fillText(secToMmSs(elapsed), W / 2, 195);
+  ctx.font = '700 46px Montserrat';
+  ctx.fillText(secToMmSs(elapsed), W - 24, 95);
 
   if (colors.alertText) {
     ctx.fillStyle = colors.alertColor;
-    ctx.font = '700 13px Montserrat';
-    ctx.fillText(colors.alertText, W / 2, 218);
+    ctx.font = '700 11px Montserrat';
+    ctx.fillText(colors.alertText, W - 24, 112);
   }
 
-  const row = [
+  // Left edge, vertically centered in the middle (person) band — green/
+  // yellow/red reference times, clear of both the top band and the center.
+  ctx.textAlign = 'left';
+  const leftX = 30;
+  const markers = [
     ['GREEN', green, '#43a047'],
     ['YELLOW', yellow, '#f9a825'],
     ['RED', red, '#e53935'],
   ];
-  row.forEach(([label, val, color], i) => {
-    const x = W / 2 + (i - 1) * 110;
+  markers.forEach(([label, val, color], i) => {
+    const y = 300 + i * 44;
     ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(leftX + 5, y - 5, 5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.font = '700 13px Montserrat';
-    ctx.fillText(secToMmSs(val), x, 248);
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(secToMmSs(val), leftX + 18, y);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '600 8px Montserrat';
-    ctx.fillText(label, x, 261);
+    ctx.fillText(label, leftX + 18, y + 12);
   });
 
-  // Progress bar — kept inside the same top band rather than at the bottom
-  // edge, since the bottom is just as likely to be covered (desk, hands,
-  // chest) depending on how close someone sits to their camera.
+  // Right edge, mirroring the markers — a vertical fill showing overall
+  // progress toward red, read top-to-bottom like the markers above it.
   const total = red || 1;
   const pct = Math.min(elapsed / total, 1);
-  const x1 = W / 2 - 170, x2 = W / 2 + 170, barY = 280;
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  ctx.fillRect(x1, barY, x2 - x1, 4);
+  const barX = W - 46, barTop = 296, barBottom = 456, barW = 10;
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(barX, barTop, barW, barBottom - barTop);
+  const fillH = (barBottom - barTop) * pct;
   ctx.fillStyle = colors.bar;
-  ctx.fillRect(x1, barY, (x2 - x1) * pct, 4);
+  ctx.fillRect(barX, barBottom - fillH, barW, fillH);
 }
 
 // Encodes one unique frame per simulated second (content only changes on
@@ -123,10 +132,11 @@ async function generateMp4({ green, yellow, red, speakerName, typeLabel, logoImg
   return new Blob([output.target.buffer], { type: 'video/mp4' });
 }
 
-export default function TimerVideoTool() {
+export default function TimerVideoTool({ roster = [] }) {
   const [type, setType] = useState('speech57');
   const [customTotal, setCustomTotal] = useState('');
-  const [speakerName, setSpeakerName] = useState('');
+  const [selectValue, setSelectValue] = useState('');
+  const [guestName, setGuestName] = useState('');
   const [status, setStatus] = useState('idle'); // idle | generating | done | unsupported
   const [progressPct, setProgressPct] = useState(0);
   const [videoUrl, setVideoUrl] = useState(null);
@@ -147,6 +157,7 @@ export default function TimerVideoTool() {
   const [green, yellow, red] = getPreset(type, customTotal);
   const typeLabel = TYPE_LABELS[type] || type;
   const totalRecordSec = red + OVERTIME_BUFFER_SEC;
+  const speakerName = selectValue === '__guest__' ? guestName.trim() : selectValue;
 
   const generate = useCallback(async () => {
     await Promise.all(FONT_WEIGHTS.map((f) => document.fonts.load(f)));
@@ -196,10 +207,20 @@ export default function TimerVideoTool() {
             <input className="fi" type="text" placeholder="15:00" value={customTotal} onChange={(e) => setCustomTotal(e.target.value)} disabled={status === 'generating'} />
           </div>
         )}
-        <div className="fg" style={{ minWidth: 200 }}>
-          <span className="fl">Speaker name (optional)</span>
-          <input className="fi" type="text" placeholder="Leave blank to reuse for anyone" value={speakerName} onChange={(e) => setSpeakerName(e.target.value)} disabled={status === 'generating'} />
+        <div className="fg" style={{ minWidth: 170 }}>
+          <span className="fl">Speaker</span>
+          <select className="fs" value={selectValue} onChange={(e) => setSelectValue(e.target.value)} disabled={status === 'generating'}>
+            <option value="">— No name (reuse for anyone) —</option>
+            {roster.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
+            <option value="__guest__">✚ Add guest…</option>
+          </select>
         </div>
+        {selectValue === '__guest__' && (
+          <div className="fg" style={{ maxWidth: 170 }}>
+            <span className="fl">Guest name</span>
+            <input className="fi" type="text" placeholder="Type name" value={guestName} onChange={(e) => setGuestName(e.target.value)} disabled={status === 'generating'} />
+          </div>
+        )}
       </div>
 
       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>

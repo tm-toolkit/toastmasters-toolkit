@@ -5,7 +5,7 @@ import { toPng } from 'html-to-image';
 import { FILLERS } from '../lib/constants';
 import { secToMmSs } from '../lib/format';
 import { getChartDataByRole, applyFilters } from '../lib/chartData';
-import { FILLER_COLORS, CATS, CAT_COLORS, CAT_GREEN, CAT_RED, boxStats } from '../lib/chartHelpers';
+import { FILLER_COLORS } from '../lib/chartHelpers';
 import { loadFromSheets } from '../lib/googleSheets';
 
 function StatGrid({ stats }) {
@@ -69,6 +69,59 @@ function MultiSelectDropdown({ label, plural, options, selected, onChange }) {
   );
 }
 
+// Same green/yellow/red mental model the Timer already uses live — no axes,
+// no quartiles, just "was this speech short, on time, close, or over."
+const STATUS_COLOR = { under: '#a9b2b1', good: '#0ca30c', warn: '#fab219', over: '#d03b3b' };
+const STATUS_LABEL = { under: 'Under time', good: 'Within time', warn: 'Cutting it close', over: 'Over time' };
+
+function speechStatus(r) {
+  const e = r.elapsed || 0;
+  if (e < (r.green || 0)) return 'under';
+  if (e > (r.red || 0)) return 'over';
+  if (e >= (r.yellow || 0)) return 'warn';
+  return 'good';
+}
+
+function SpeakerTimeReport({ timerRaw }) {
+  const speakers = useMemo(() => [...new Set(timerRaw.map((r) => r.speaker))].sort(), [timerRaw]);
+
+  if (!speakers.length) {
+    return <div className="empty-state"><div className="icon">⏱</div><p>No timed speeches yet.</p></div>;
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14, fontSize: 11, color: 'var(--text-muted)' }}>
+        {Object.entries(STATUS_LABEL).map(([key, label]) => (
+          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 12, height: 12, borderRadius: '50%', background: STATUS_COLOR[key], display: 'inline-block' }}></span>
+            {label}
+          </div>
+        ))}
+      </div>
+      {speakers.map((sp) => {
+        const recs = [...timerRaw.filter((r) => r.speaker === sp)].sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+        const withinCount = recs.filter((r) => speechStatus(r) === 'good').length;
+        return (
+          <div key={sp} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 150, fontWeight: 600, fontSize: 13, fontFamily: 'var(--font-head)' }}>{sp}</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {recs.map((r, i) => (
+                <span
+                  key={i}
+                  title={`${r.category} · ${r.date} · ${secToMmSs(r.elapsed)} — ${STATUS_LABEL[speechStatus(r)]}`}
+                  style={{ width: 16, height: 16, borderRadius: '50%', background: STATUS_COLOR[speechStatus(r)], display: 'inline-block', cursor: 'default' }}
+                ></span>
+              ))}
+            </div>
+            <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{withinCount}/{recs.length} within time</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
   const [viewMode, setViewMode] = useState('both');
   const [selSpeakers, setSelSpeakers] = useState([]);
@@ -79,7 +132,7 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
   const [loadStatus, setLoadStatus] = useState(null);
   const [downloading, setDownloading] = useState(false);
 
-  const radarRef = useRef(null), ahLineRef = useRef(null), boxPlotRef = useRef(null), onTimeRef = useRef(null);
+  const radarRef = useRef(null);
   const chartsRef = useRef({});
   const reportRef = useRef(null);
 
@@ -141,7 +194,7 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
   }, [timerRaw]);
 
   useEffect(() => {
-    if (viewMode !== 'ah' && viewMode !== 'both') { destroy('radar'); destroy('ahLine'); return; }
+    if (viewMode !== 'ah' && viewMode !== 'both') { destroy('radar'); return; }
     const speakers = [...new Set(ahRaw.map((r) => r.speaker))];
     const speakersByTotal = [...speakers].sort((a, b) =>
       FILLERS.reduce((s, f) => s + ahRaw.filter((r) => r.speaker === b).reduce((a2, r) => a2 + (r.counts[f] || 0), 0), 0)
@@ -168,150 +221,8 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
       },
     });
 
-    const meetingDates = [...new Set(ahRaw.map((r) => r.date))].sort();
-    const vals = meetingDates.map((d) => ahRaw.filter((r) => r.date === d).reduce((s, r) => s + r.total, 0));
-    destroy('ahLine');
-    chartsRef.current.ahLine = new Chart(ahLineRef.current, {
-      type: 'line',
-      data: { labels: meetingDates, datasets: [{
-        label: 'Total fillers', borderColor: '#772432', backgroundColor: 'rgba(119,36,50,0.07)',
-        data: vals, tension: 0.3, fill: true, pointBackgroundColor: '#772432', pointRadius: 5, pointHoverRadius: 7,
-      }] },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false }, tooltip: { callbacks: {
-          title: (i) => 'Date: ' + i[0].label,
-          label: (ctx) => {
-            const v = ctx.parsed.y;
-            const avg = vals.slice(0, ctx.dataIndex + 1).reduce((s, x) => s + x, 0) / (ctx.dataIndex + 1);
-            return [' Fillers: ' + v, ' Running avg: ' + avg.toFixed(1)];
-          },
-        } } },
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-      },
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ahRaw, viewMode]);
-
-  useEffect(() => {
-    if (viewMode !== 'timer' && viewMode !== 'both') { destroy('boxPlot'); destroy('onTime'); return; }
-    const FEW = 4;
-    const catStats = {};
-    const jitterDatasets = [];
-    CATS.forEach((cat) => {
-      const catRaw = timerRaw.filter((r) => r.category === cat);
-      const vals = catRaw.map((r) => r.elapsed || 0).filter((v) => v > 0);
-      const gLine = CAT_GREEN[cat] || 0, rLine = CAT_RED[cat] || 0;
-      if (!vals.length) return;
-      catStats[cat] = boxStats(vals);
-      jitterDatasets.push({
-        label: cat,
-        data: catRaw.map((r) => ({ x: cat, y: r.elapsed || 0, _sp: r.speaker, _cat: r.category, _within: r.within })),
-        backgroundColor: catRaw.map((r) => {
-          const e = r.elapsed || 0;
-          const g = r.green || gLine, yl = r.yellow || 90, rd = r.red || rLine;
-          if (e < g) return '#898781';
-          if (e > rd) return '#d03b3b';
-          if (e >= yl) return '#fab219';
-          return '#0ca30c';
-        }),
-        pointRadius: 6, pointHoverRadius: 9, type: 'scatter',
-      });
-    });
-
-    destroy('boxPlot');
-    chartsRef.current.boxPlot = new Chart(boxPlotRef.current, {
-      type: 'bar',
-      data: { datasets: jitterDatasets },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: (ctx) => {
-            const p = ctx.raw;
-            if (p && p._sp) return [' ' + p._sp, ' Time: ' + secToMmSs(p.y), (p._within ? '✓ Within' : '✗ Outside')];
-            return ' ' + secToMmSs(p?.y || 0);
-          } } },
-        },
-        scales: { x: { type: 'category' }, y: { beginAtZero: true, ticks: { callback: (v) => secToMmSs(v), font: { size: 10 } } } },
-      },
-      plugins: [{
-        id: 'refLines',
-        beforeDatasetsDraw(chart) {
-          const ctx2 = chart.ctx, xScale = chart.scales.x, yScale = chart.scales.y, bw = 35;
-          CATS.forEach((cat) => {
-            const s = catStats[cat];
-            if (!s || s.all.length < FEW) return;
-            try {
-              const xPos = xScale.getPixelForValue(cat);
-              const yMin = yScale.getPixelForValue(s.min), yMax = yScale.getPixelForValue(s.max);
-              const yQ1 = yScale.getPixelForValue(s.q1), yQ3 = yScale.getPixelForValue(s.q3);
-              const yMed = yScale.getPixelForValue(s.med);
-              const color = CAT_COLORS[cat];
-              ctx2.save();
-              ctx2.strokeStyle = color; ctx2.lineWidth = 1.5; ctx2.setLineDash([]);
-              ctx2.beginPath(); ctx2.moveTo(xPos, yMin); ctx2.lineTo(xPos, yQ1); ctx2.stroke();
-              ctx2.beginPath(); ctx2.moveTo(xPos, yQ3); ctx2.lineTo(xPos, yMax); ctx2.stroke();
-              ctx2.beginPath(); ctx2.moveTo(xPos - bw * 0.4, yMin); ctx2.lineTo(xPos + bw * 0.4, yMin); ctx2.stroke();
-              ctx2.beginPath(); ctx2.moveTo(xPos - bw * 0.4, yMax); ctx2.lineTo(xPos + bw * 0.4, yMax); ctx2.stroke();
-              ctx2.fillStyle = color + '26';
-              ctx2.fillRect(xPos - bw, yQ3, bw * 2, yQ1 - yQ3);
-              ctx2.strokeRect(xPos - bw, yQ3, bw * 2, yQ1 - yQ3);
-              ctx2.lineWidth = 2.5;
-              ctx2.beginPath(); ctx2.moveTo(xPos - bw, yMed); ctx2.lineTo(xPos + bw, yMed); ctx2.stroke();
-              ctx2.restore();
-            } catch { /* category not on the x-axis for this data slice */ }
-          });
-        },
-        afterDraw(chart) {
-          const ctx2 = chart.ctx, xScale = chart.scales.x, yScale = chart.scales.y;
-          CATS.forEach((cat) => {
-            const catRaw2 = timerRaw.filter((r) => r.category === cat);
-            if (!catRaw2.length) return;
-            const med2 = (arr) => { const s = [...arr].sort((a, b) => a - b); return s[Math.floor(s.length / 2)] || 0; };
-            const gv = med2(catRaw2.map((r) => r.green || 0).filter((v) => v > 0));
-            const rv = med2(catRaw2.map((r) => r.red || 0).filter((v) => v > 0));
-            try {
-              const xPos = xScale.getPixelForValue(cat), bw = 35;
-              if (gv) {
-                const yPos = yScale.getPixelForValue(gv);
-                ctx2.save(); ctx2.strokeStyle = '#43a047'; ctx2.lineWidth = 2; ctx2.setLineDash([4, 3]);
-                ctx2.beginPath(); ctx2.moveTo(xPos - bw, yPos); ctx2.lineTo(xPos + bw, yPos); ctx2.stroke();
-                ctx2.restore();
-              }
-              if (rv) {
-                const yPos = yScale.getPixelForValue(rv);
-                ctx2.save(); ctx2.strokeStyle = '#e53935'; ctx2.lineWidth = 2; ctx2.setLineDash([4, 3]);
-                ctx2.beginPath(); ctx2.moveTo(xPos - bw, yPos); ctx2.lineTo(xPos + bw, yPos); ctx2.stroke();
-                ctx2.restore();
-              }
-            } catch { /* category not on the x-axis for this data slice */ }
-          });
-        },
-      }],
-    });
-
-    const speakers = [...new Set(timerRaw.map((r) => r.speaker))];
-    const onTime = speakers.map((sp) => {
-      const recs = timerRaw.filter((r) => r.speaker === sp);
-      return recs.length ? Math.round(recs.filter((r) => r.within).length / recs.length * 100) : 0;
-    });
-    destroy('onTime');
-    chartsRef.current.onTime = new Chart(onTimeRef.current, {
-      type: 'bar',
-      data: { labels: speakers, datasets: [{
-        label: 'On-time %', data: onTime,
-        backgroundColor: onTime.map((v) => (v >= 80 ? '#0ca30c' : v >= 50 ? '#fab219' : '#d03b3b')),
-        borderRadius: 4, borderSkipped: false,
-      }] },
-      options: {
-        responsive: true, indexAxis: 'y',
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ' ' + ctx.parsed.x + '% on time' } } },
-        scales: { x: { beginAtZero: true, max: 100, ticks: { callback: (v) => v + '%' } } },
-      },
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timerRaw, viewMode]);
 
   useEffect(() => () => { Object.keys(chartsRef.current).forEach(destroy); }, []);
 
@@ -412,11 +323,6 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>One bar per speaker, ranked by total fillers. Segment color shows which filler word — segment width shows how many times.</div>
             <div style={{ maxWidth: 640, margin: '0 auto', position: 'relative', height: 340 }}><canvas ref={radarRef}></canvas></div>
           </div>
-          <div className="chart-wrap">
-            <div className="chart-title">Total fillers per meeting</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>Each point is one meeting. A downward trend means the club is improving over time.</div>
-            <canvas ref={ahLineRef} height="90"></canvas>
-          </div>
         </div>
 
         <div style={{ marginTop: 8, display: viewMode === 'timer' || viewMode === 'both' ? '' : 'none' }}>
@@ -425,14 +331,9 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
           </div>
           <StatGrid stats={timerStats} />
           <div className="chart-wrap">
-            <div className="chart-title">Speech time distribution by category</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>Box shows median and spread of speech times per category. Each dot is one speech. Green band = within time range. When few data points exist, all dots are shown individually.</div>
-            <canvas ref={boxPlotRef} height="130"></canvas>
-          </div>
-          <div className="chart-wrap">
-            <div className="chart-title">On-time rate by speaker</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>% of speeches where the speaker finished between green and red. 🟢 ≥80% · 🟡 ≥50% · 🔴 below 50%.</div>
-            <canvas ref={onTimeRef} height="90"></canvas>
+            <div className="chart-title">Speaker time report</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>Each dot is one speech, in order, colored the same way the live Timer colors it.</div>
+            <SpeakerTimeReport timerRaw={timerRaw} />
           </div>
         </div>
       </div>

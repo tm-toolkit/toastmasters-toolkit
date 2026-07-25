@@ -6,15 +6,20 @@ import { getPreset, TYPE_LABELS } from '../../lib/timerPresets';
 import { computeColors } from '../../lib/timerColors';
 
 const LOGO_SRC = `${import.meta.env.BASE_URL}tm-logo.png`;
+// Layout math stays in this 1280x720 logical space; the canvas that actually
+// gets encoded is scaled up to 1920x1080 (Zoom's documented max) via
+// ctx.scale() in generateMp4, so text renders crisper without redoing
+// every coordinate below.
 const W = 1280, H = 720;
+const OUTPUT_SCALE = 1.5;
 // Extra time recorded past "red" so the video keeps showing TIME IS UP instead
 // of cutting off — Zoom loops the file once it runs out, which resets the
 // clock to 0:00, so this just delays that reset for speakers who run a bit over.
 const OVERTIME_BUFFER_SEC = 120;
 
 const FONT_WEIGHTS = [
-  '500 9px Montserrat', '700 12px Montserrat', '700 14px Montserrat', '600 9px Montserrat',
-  '700 46px Montserrat', '700 11px Montserrat', '700 13px Montserrat', '600 8px Montserrat',
+  '500 10px Montserrat', '700 15px Montserrat', '700 17px Montserrat', '600 10px Montserrat',
+  '700 72px Montserrat', '700 13px Montserrat', '600 8px Montserrat',
 ];
 
 function slugify(text) {
@@ -28,8 +33,10 @@ function drawFrame(ctx, logoImg, { speakerName, typeLabel, elapsed, green, yello
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
-  // Top bar
-  const logoH = 40;
+  // Top-left: club logo. The brand manual's 72px figure is a *minimum* for
+  // small print/web placements (buttons, footers) — this is the dominant
+  // graphic on a full-frame background, so it runs well above that floor.
+  const logoH = 56;
   let textX = 24;
   if (logoImg) {
     const logoW = logoH * (logoImg.width / logoImg.height);
@@ -37,38 +44,37 @@ function drawFrame(ctx, logoImg, { speakerName, typeLabel, elapsed, green, yello
     textX = 24 + logoW + 12;
   }
   ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.font = '500 9px Montserrat';
-  ctx.fillText('TOASTMASTERS INTERNATIONAL', textX, 30);
+  ctx.font = '500 10px Montserrat';
+  ctx.fillText('TOASTMASTERS INTERNATIONAL', textX, 40);
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.font = '700 12px Montserrat';
-  ctx.fillText('TIMER', textX, 46);
+  ctx.font = '700 15px Montserrat';
+  ctx.fillText('TIMER', textX, 60);
 
-  // Zoom's virtual background composites the actual person — full body,
-  // face included — and even when it sits in the "top 30%" band by the
-  // numbers, a large horizontally-centered clock still reads as the visual
-  // center of the frame. So nothing sits on the center line at all, in
-  // either direction: nothing hugs the top-right corner, mirroring the
-  // logo's top-left corner, and the rest hugs the left/right edges below.
+  // Top-right: speaker/type/clock, mirroring the logo's corner. Zoom
+  // composites the presenter's full body roughly across the middle of the
+  // frame, so nothing sits center — but this plays inside a small gallery
+  // tile during an actual meeting, so the clock still runs large to stay
+  // readable at a glance, not just clear of the presenter.
   ctx.textAlign = 'right';
-  let cy = 30;
+  let cy = 32;
   if (speakerName) {
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.font = '700 14px Montserrat';
+    ctx.font = '700 17px Montserrat';
     ctx.fillText(speakerName, W - 24, cy);
-    cy += 18;
+    cy += 20;
   }
   ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.font = '600 9px Montserrat';
+  ctx.font = '600 10px Montserrat';
   ctx.fillText(typeLabel.toUpperCase(), W - 24, cy);
 
   ctx.fillStyle = colors.clock;
-  ctx.font = '700 46px Montserrat';
-  ctx.fillText(secToMmSs(elapsed), W - 24, 95);
+  ctx.font = '700 72px Montserrat';
+  ctx.fillText(secToMmSs(elapsed), W - 24, 145);
 
   if (colors.alertText) {
     ctx.fillStyle = colors.alertColor;
-    ctx.font = '700 11px Montserrat';
-    ctx.fillText(colors.alertText, W - 24, 112);
+    ctx.font = '700 13px Montserrat';
+    ctx.fillText(colors.alertText, W - 24, 168);
   }
 
   // Left edge, vertically centered in the middle (person) band — green/
@@ -94,16 +100,38 @@ function drawFrame(ctx, logoImg, { speakerName, typeLabel, elapsed, green, yello
     ctx.fillText(label, leftX + 18, y + 12);
   });
 
-  // Right edge, mirroring the markers — a vertical fill showing overall
-  // progress toward red, read top-to-bottom like the markers above it.
+  // Right edge — the same idea as the live Display Window's progress bar
+  // (a dot traveling past green/yellow/red tick marks on a track), just
+  // rotated: top = start, bottom = red, instead of left-to-right.
   const total = red || 1;
-  const pct = Math.min(elapsed / total, 1);
-  const barX = W - 46, barTop = 296, barBottom = 456, barW = 10;
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
-  ctx.fillRect(barX, barTop, barW, barBottom - barTop);
-  const fillH = (barBottom - barTop) * pct;
-  ctx.fillStyle = colors.bar;
-  ctx.fillRect(barX, barBottom - fillH, barW, fillH);
+  const trackX = W - 40, trackTop = 296, trackBottom = 456;
+  const yFor = (v) => trackTop + Math.min(v / total, 1) * (trackBottom - trackTop);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(trackX, trackTop);
+  ctx.lineTo(trackX, trackBottom);
+  ctx.stroke();
+
+  [[green, '#43a047'], [yellow, '#f9a825'], [red, '#e53935']].forEach(([val, color]) => {
+    const y = yFor(val);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(trackX - 7, y);
+    ctx.lineTo(trackX + 7, y);
+    ctx.stroke();
+  });
+
+  const dotY = yFor(elapsed);
+  ctx.fillStyle = colors.dot;
+  ctx.beginPath();
+  ctx.arc(trackX, dotY, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 }
 
 // Encodes one unique frame per simulated second (content only changes on
@@ -113,12 +141,13 @@ function drawFrame(ctx, logoImg, { speakerName, typeLabel, elapsed, green, yello
 async function generateMp4({ green, yellow, red, speakerName, typeLabel, logoImg, onProgress }) {
   const totalSec = red + OVERTIME_BUFFER_SEC;
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = W * OUTPUT_SCALE;
+  canvas.height = H * OUTPUT_SCALE;
   const ctx = canvas.getContext('2d');
+  ctx.scale(OUTPUT_SCALE, OUTPUT_SCALE);
 
   const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
-  const videoSource = new CanvasSource(canvas, { codec: 'avc', bitrate: 2_000_000 });
+  const videoSource = new CanvasSource(canvas, { codec: 'avc', bitrate: 6_000_000 });
   output.addVideoTrack(videoSource, { frameRate: 1 });
   await output.start();
 

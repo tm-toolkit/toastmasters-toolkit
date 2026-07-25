@@ -161,11 +161,7 @@ async function generateMp4({ green, yellow, red, speakerName, typeLabel, logoImg
   return new Blob([output.target.buffer], { type: 'video/mp4' });
 }
 
-export default function TimerVideoTool({ roster = [] }) {
-  const [type, setType] = useState('speech57');
-  const [customTotal, setCustomTotal] = useState('');
-  const [selectValue, setSelectValue] = useState('');
-  const [guestName, setGuestName] = useState('');
+export default function TimerVideoTool({ green, yellow, red, typeLabel, speakerName }) {
   const [status, setStatus] = useState('idle'); // idle | generating | done | unsupported
   const [progressPct, setProgressPct] = useState(0);
   const [videoUrl, setVideoUrl] = useState(null);
@@ -183,10 +179,7 @@ export default function TimerVideoTool({ roster = [] }) {
 
   useEffect(() => () => { if (videoUrl) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
 
-  const [green, yellow, red] = getPreset(type, customTotal);
-  const typeLabel = TYPE_LABELS[type] || type;
   const totalRecordSec = red + OVERTIME_BUFFER_SEC;
-  const speakerName = selectValue === '__guest__' ? guestName.trim() : selectValue;
 
   const generate = useCallback(async () => {
     await Promise.all(FONT_WEIGHTS.map((f) => document.fonts.load(f)));
@@ -209,8 +202,8 @@ export default function TimerVideoTool({ roster = [] }) {
     <div>
       <h3 className="tool-title">🎥 Zoom Background Video</h3>
       <p className="tool-desc">
-        Pick the speaker and type, download the video, and set it as your Zoom Video Virtual Background —
-        then start the live clock below when they begin and switch your background to match.
+        Download the video for the speaker and type selected above, and set it as your Zoom Video Virtual
+        Background — then start the live clock below when they begin and switch your background to match.
       </p>
 
       {status === 'unsupported' && (
@@ -218,39 +211,6 @@ export default function TimerVideoTool({ roster = [] }) {
           This browser doesn't support in-browser video encoding. Try a recent Chrome or Edge.
         </div>
       )}
-
-      <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '13px 16px', marginBottom: 14, boxShadow: 'var(--shadow)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div className="fg" style={{ maxWidth: 190 }}>
-          <span className="fl">Type</span>
-          <select className="fs" value={type} onChange={(e) => setType(e.target.value)} disabled={status === 'generating'}>
-            <option value="speech57">Speech (5–7 min)</option>
-            <option value="eval">Evaluator (2–3 min)</option>
-            <option value="topics">Table Topics (1–2 min)</option>
-            <option value="speech46">Ice Breaker (4–6 min)</option>
-            <option value="custom">Custom…</option>
-          </select>
-        </div>
-        {type === 'custom' && (
-          <div className="fg" style={{ maxWidth: 140 }}>
-            <span className="fl">Total time (mm:ss)</span>
-            <input className="fi" type="text" placeholder="15:00" value={customTotal} onChange={(e) => setCustomTotal(e.target.value)} disabled={status === 'generating'} />
-          </div>
-        )}
-        <div className="fg" style={{ minWidth: 170 }}>
-          <span className="fl">Speaker</span>
-          <select className="fs" value={selectValue} onChange={(e) => setSelectValue(e.target.value)} disabled={status === 'generating'}>
-            <option value="">— No name (reuse for anyone) —</option>
-            {roster.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
-            <option value="__guest__">✚ Add guest…</option>
-          </select>
-        </div>
-        {selectValue === '__guest__' && (
-          <div className="fg" style={{ maxWidth: 170 }}>
-            <span className="fl">Guest name</span>
-            <input className="fi" type="text" placeholder="Type name" value={guestName} onChange={(e) => setGuestName(e.target.value)} disabled={status === 'generating'} />
-          </div>
-        )}
-      </div>
 
       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
         🟢 {secToMmSs(green)} · 🟡 {secToMmSs(yellow)} · 🔴 {secToMmSs(red)} — video runs {secToMmSs(totalRecordSec)} total (includes {OVERTIME_BUFFER_SEC / 60} extra minutes past red, in case the speaker runs over).

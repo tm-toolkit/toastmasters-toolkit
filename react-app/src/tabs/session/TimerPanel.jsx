@@ -55,12 +55,13 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
     return `🟢${secToMmSs(g)} 🟡${secToMmSs(y)} 🔴${secToMmSs(totalSec)}`;
   })();
 
+  const speakerName = selectValue === '__guest__' ? guestName.trim() : selectValue;
+  const [green, yellow, red] = getPreset(type, customTotal);
+  const typeLabel = TYPE_LABELS[type] || type;
+
   const addToQueue = () => {
-    const name = selectValue === '__guest__' ? guestName.trim() : selectValue;
-    if (!name) return;
-    const [g, y, r] = getPreset(type, customTotal);
-    const typeLabel = TYPE_LABELS[type] || type;
-    setQueue([{ name, type, typeLabel, green: g, yellow: y, red: r, elapsed: 0, state: 'pending', done: false }, ...queue]);
+    if (!speakerName) return;
+    setQueue([{ name: speakerName, type, typeLabel, green, yellow, red, elapsed: 0, state: 'pending', done: false }, ...queue]);
     setActiveIdx((idx) => (idx >= 0 ? idx + 1 : idx));
     setGuestName('');
     setSelectValue('');
@@ -140,20 +141,8 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
     <div>
       <div className="section-head">
         <h2>Timer</h2>
-        <p>Generate a Zoom background video, then select a speaker, set the type, and start the clock</p>
+        <p>Select a speaker and type once — download the Zoom background video, add them to the queue, and start the clock</p>
         <div className="maroon-line"></div>
-      </div>
-
-      <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 14, boxShadow: 'var(--shadow)' }}>
-        <TimerVideoTool roster={roster} />
-      </div>
-
-      <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 14, boxShadow: 'var(--shadow)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Opening Script</span>
-          <button className="btn-b" onClick={() => navigator.clipboard.writeText(TIMER_SCRIPT)} style={{ fontSize: 10, height: 28, padding: '0 10px' }}>Copy</button>
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8, maxHeight: 120, overflowY: 'auto', whiteSpace: 'pre-line' }}>{TIMER_SCRIPT}</div>
       </div>
 
       <div className="toolbar">
@@ -191,6 +180,18 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
           </div>
         )}
         <button className="btn-p" onClick={addToQueue}>+ Add to Queue</button>
+      </div>
+
+      <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 14, boxShadow: 'var(--shadow)' }}>
+        <TimerVideoTool green={green} yellow={yellow} red={red} typeLabel={typeLabel} speakerName={speakerName} />
+      </div>
+
+      <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 14, boxShadow: 'var(--shadow)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span style={{ fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Opening Script</span>
+          <button className="btn-b" onClick={() => navigator.clipboard.writeText(TIMER_SCRIPT)} style={{ fontSize: 10, height: 28, padding: '0 10px' }}>Copy</button>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8, maxHeight: 120, overflowY: 'auto', whiteSpace: 'pre-line' }}>{TIMER_SCRIPT}</div>
       </div>
 
       {!queue.length ? (

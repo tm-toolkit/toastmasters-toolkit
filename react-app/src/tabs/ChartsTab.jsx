@@ -5,7 +5,7 @@ import { toPng } from 'html-to-image';
 import { FILLERS } from '../lib/constants';
 import { secToMmSs } from '../lib/format';
 import { getChartDataByRole, applyFilters } from '../lib/chartData';
-import { FILLER_COLORS, CATS, fmtDateShort } from '../lib/chartHelpers';
+import { CATS, fmtDateShort } from '../lib/chartHelpers';
 import { loadFromSheets } from '../lib/googleSheets';
 
 function StatGrid({ stats }) {
@@ -68,6 +68,13 @@ function MultiSelectDropdown({ label, plural, options, selected, onChange }) {
     </div>
   );
 }
+
+// Categorical palette for the radar chart's per-speaker series (axes are the
+// filler words, so color here identifies the speaker, not the filler type).
+const SPEAKER_COLORS = [
+  '#004165', '#772432', '#2E7D32', '#E67E22', '#7F77DD', '#0097A7',
+  '#C2185B', '#8D6E63', '#558B2F', '#F9A825', '#5C6BC0', '#00897B',
+];
 
 // Same green/yellow/red mental model the Timer already uses live — no axes,
 // no quartiles, just "was this speech short, on time, close, or over."
@@ -226,22 +233,30 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
 
     destroy('radar');
     chartsRef.current.radar = new Chart(radarRef.current, {
-      type: 'bar',
+      type: 'radar',
       data: {
-        labels: speakersByTotal,
-        datasets: FILLERS.map((f) => ({
-          label: f,
-          data: speakersByTotal.map((sp) => ahRaw.filter((r) => r.speaker === sp).reduce((s, r) => s + (r.counts[f] || 0), 0)),
-          backgroundColor: FILLER_COLORS[f],
-          borderRadius: 2, borderSkipped: false,
-        })),
+        labels: FILLERS,
+        datasets: speakersByTotal.map((sp, i) => {
+          const color = SPEAKER_COLORS[i % SPEAKER_COLORS.length];
+          return {
+            label: sp,
+            data: FILLERS.map((f) => ahRaw.filter((r) => r.speaker === sp).reduce((s, r) => s + (r.counts[f] || 0), 0)),
+            borderColor: color,
+            backgroundColor: color + '26',
+            borderWidth: 2,
+            pointBackgroundColor: color,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+          };
+        }),
       },
       options: {
-        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-          tooltip: { callbacks: { label: (ctx) => ' ' + ctx.dataset.label + ': ' + ctx.parsed.x } } },
-        scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e1e0d9' } },
-          y: { stacked: true, ticks: { font: { size: 11 } } } },
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+          tooltip: { callbacks: { label: (ctx) => ' ' + ctx.dataset.label + ' — ' + ctx.label + ': ' + ctx.parsed.r } } },
+        scales: { r: { beginAtZero: true, ticks: { precision: 0, font: { size: 9 }, backdropColor: 'transparent' },
+          pointLabels: { font: { size: 11 } }, grid: { color: '#e1e0d9' } } },
       },
     });
 
@@ -344,7 +359,7 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
           <StatGrid stats={ahStats} />
           <div className="chart-wrap">
             <div className="chart-title">Filler breakdown by speaker</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>One bar per speaker, ranked by total fillers. Segment color shows which filler word — segment width shows how many times.</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>One shape per speaker — each axis is a filler word. The bigger the shape toward an axis, the more that word came up.</div>
             <div style={{ maxWidth: 640, margin: '0 auto', position: 'relative', height: 340 }}><canvas ref={radarRef}></canvas></div>
           </div>
         </div>

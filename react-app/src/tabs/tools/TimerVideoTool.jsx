@@ -9,7 +9,7 @@ const W = 1280, H = 720;
 // Extra time recorded past "red" so the video keeps showing TIME IS UP instead
 // of cutting off — Zoom loops the file once it runs out, which resets the
 // clock to 0:00, so this just delays that reset for speakers who run a bit over.
-const OVERTIME_BUFFER_SEC = 60;
+const OVERTIME_BUFFER_SEC = 120;
 
 const FONT_WEIGHTS = ['500 9px Montserrat', '600 11px Montserrat', '700 15px Montserrat', '700 22px Montserrat', '700 140px Montserrat'];
 
@@ -169,15 +169,15 @@ export default function TimerVideoTool() {
   };
 
   const downloadName = `zoom-timer-${slugify(typeLabel)}${speakerName ? '-' + slugify(speakerName) : ''}.webm`;
+  const progressPct = Math.min(Math.round((elapsedSec / totalRecordSec) * 100), 100);
 
   return (
     <div>
       <h3 className="tool-title">Timer Video (no OBS needed)</h3>
       <p className="tool-desc">
         Generates a countdown video you download once and set directly as a Zoom Video Virtual Background —
-        no OBS, no window capture, nothing to configure in Zoom beyond picking the file. The trade-off: it
-        records in real time — but you can hit "Stop &amp; Download" at any point and keep what's recorded
-        so far, you don't have to wait for the full length shown below.
+        no OBS, no window capture, nothing to configure in Zoom beyond picking the file. It builds in the
+        background — pick your settings, hit Generate, and download it when it's ready.
       </p>
 
       {status === 'unsupported' && (
@@ -185,6 +185,11 @@ export default function TimerVideoTool() {
           This browser doesn't support recording canvas to video. Try a recent Chrome or Edge.
         </div>
       )}
+
+      {/* Off-screen — canvas.captureStream() needs a real, sized canvas in the
+          DOM, but there's no reason to show the countdown ticking by; nobody
+          wants to watch a clock to get a file. */}
+      <canvas ref={canvasRef} style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }} aria-hidden="true" />
 
       <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '13px 16px', marginBottom: 14, boxShadow: 'var(--shadow)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div className="fg" style={{ maxWidth: 190 }}>
@@ -209,39 +214,53 @@ export default function TimerVideoTool() {
         </div>
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
-        🟢 {secToMmSs(green)} · 🟡 {secToMmSs(yellow)} · 🔴 {secToMmSs(red)} — recording runs {secToMmSs(totalRecordSec)} total (includes 1 extra minute past red).
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
+        🟢 {secToMmSs(green)} · 🟡 {secToMmSs(yellow)} · 🔴 {secToMmSs(red)} — video runs {secToMmSs(totalRecordSec)} total (includes {OVERTIME_BUFFER_SEC / 60} extra minutes past red, in case the speaker runs over).
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
-        <canvas ref={canvasRef} style={{ width: '100%', maxWidth: 480, height: 'auto', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', background: '#0d1b2a' }} />
-
-        {status === 'recording' && (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-head)', fontWeight: 600 }}>
-            Recording… {secToMmSs(elapsedSec)} / {secToMmSs(totalRecordSec)} — keep this tab open and visible.
-            You don't have to wait for the end — "Stop & Download" below uses whatever's recorded so far.
+      {status === 'idle' || status === 'unsupported' ? (
+        <motion.button className="btn-b" whileTap={{ scale: 0.96 }} onClick={startRecording} disabled={status === 'unsupported'}>
+          ⏺ Generate Video
+        </motion.button>
+      ) : status === 'recording' ? (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 14, maxWidth: 420 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+              style={{ width: 30, height: 30, borderRadius: '50%', border: '3px solid var(--border)', borderTopColor: 'var(--maroon)', flexShrink: 0 }}
+            />
+            <div>
+              <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 13 }}>Generating your video…</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Keep this tab open — no need to watch it, just let it run.</div>
+            </div>
           </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 12 }}>
-          {status !== 'recording' && (
-            <motion.button className="btn-b" whileTap={{ scale: 0.96 }} onClick={startRecording} disabled={status === 'unsupported'}>
-              ⏺ Generate Video
-            </motion.button>
+          <div style={{ width: '100%', height: 6, background: 'var(--surface)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: progressPct + '%', background: 'var(--maroon)', borderRadius: 3, transition: 'width 1s linear' }} />
+          </div>
+          <button className="btn-s" style={{ fontSize: 11, alignSelf: 'flex-start' }} onClick={stopRecording}>
+            Don't want to wait? Stop now and download what's ready
+          </button>
+        </motion.div>
+      ) : (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
+          {videoUrl && (
+            /* eslint-disable-next-line jsx-a11y/media-has-caption -- generated clip has no audio track */
+            <video src={videoUrl} controls style={{ width: '100%', maxWidth: 420, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', background: '#0d1b2a' }} />
           )}
-          {status === 'recording' && (
-            <motion.button className="btn-s" whileTap={{ scale: 0.96 }} onClick={stopRecording}>⏹ Stop &amp; Download</motion.button>
-          )}
-          {status === 'done' && videoUrl && (
-            <motion.a
-              className="btn-b" whileTap={{ scale: 0.96 }} href={videoUrl} download={downloadName}
-              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-            >
-              ⬇ Download Video
-            </motion.a>
-          )}
-        </div>
-      </motion.div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {videoUrl && (
+              <motion.a
+                className="btn-b" whileTap={{ scale: 0.96 }} href={videoUrl} download={downloadName}
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+              >
+                ⬇ Download Video
+              </motion.a>
+            )}
+            <motion.button className="btn-s" whileTap={{ scale: 0.96 }} onClick={startRecording}>⟳ Generate another</motion.button>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

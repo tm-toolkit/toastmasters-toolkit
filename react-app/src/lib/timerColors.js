@@ -1,5 +1,4 @@
-// Shared between the live Display Window and the downloadable Timer Video —
-// both need the exact same green/yellow/red visual treatment.
+// Green/yellow/red visual treatment for the Timer Video's live-preview colors.
 export function computeColors(elapsed, green, yellow, red) {
   if (red && elapsed >= red) {
     return {

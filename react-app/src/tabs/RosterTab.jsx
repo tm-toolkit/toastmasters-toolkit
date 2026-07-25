@@ -84,7 +84,7 @@ export default function RosterTab({ roster, setRoster, currentRole, setCurrentRo
           </select>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', paddingBottom: 9, maxWidth: 260 }}>
-          Shown on the Display Window and pre-filled into the Zoom Background tool.
+          Pre-filled into the Zoom Background tool.
         </div>
       </div>
 

@@ -53,7 +53,6 @@ export default function Layout() {
             setHistory={setHistory}
             onAhCount={setAhCount}
             onTimerCount={setTimerCount}
-            onGoToOtherTools={() => setActiveTab('tools')}
           />
         </div>
         <div className={'tab-panel' + (activeTab === 'history' ? ' active' : '')}>

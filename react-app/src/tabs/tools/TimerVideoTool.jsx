@@ -207,10 +207,10 @@ export default function TimerVideoTool({ roster = [] }) {
 
   return (
     <div>
-      <h3 className="tool-title">Timer Video (no OBS needed)</h3>
+      <h3 className="tool-title">🎥 Zoom Background Video</h3>
       <p className="tool-desc">
-        Generates a countdown video you download once and set directly as a Zoom Video Virtual Background —
-        no OBS, no window capture, nothing to configure in Zoom beyond picking the file.
+        Pick the speaker and type, download the video, and set it as your Zoom Video Virtual Background —
+        then start the live clock below when they begin and switch your background to match.
       </p>
 
       {status === 'unsupported' && (

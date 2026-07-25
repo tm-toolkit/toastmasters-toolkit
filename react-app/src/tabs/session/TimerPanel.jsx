@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { secToMmSs } from '../../lib/format';
 import { getPreset, TYPE_LABELS } from '../../lib/timerPresets';
 import { buildTimerSaveHistory } from '../../lib/timerHistory';
-import { useBroadcastChannel } from '../../hooks/useBroadcastChannel';
 import ReportModal from '../../components/ReportModal';
+import TimerVideoTool from '../tools/TimerVideoTool';
 
 function buildTimerScript() {
   return [
@@ -31,7 +31,7 @@ function timerColorClass(elapsed, green, yellow, red) {
   return '';
 }
 
-export default function TimerPanel({ roster, history, setHistory, onCountChange, onGoToOtherTools }) {
+export default function TimerPanel({ roster, history, setHistory, onCountChange }) {
   const [queue, setQueue] = useState([]);
   const [log, setLog] = useState([]);
   const [activeIdx, setActiveIdx] = useState(-1);
@@ -42,7 +42,6 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange,
   const [saveMsg, setSaveMsg] = useState('');
   const [report, setReport] = useState(null);
   const intervalRef = useRef(null);
-  const post = useBroadcastChannel('tm_display');
 
   useEffect(() => { onCountChange?.(queue.length); }, [queue, onCountChange]);
   useEffect(() => () => clearInterval(intervalRef.current), []);
@@ -72,9 +71,7 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange,
     intervalRef.current = null;
     if (activeIdx >= 0 && currentQueue[activeIdx]) {
       const idx = activeIdx;
-      const sp = currentQueue[idx];
       setQueue((q) => q.map((item, i) => i === idx ? { ...item, state: 'stopped' } : item));
-      post({ type: 'timer', speaker: sp.name, typeLabel: sp.typeLabel, elapsed: sp.elapsed, green: sp.green, yellow: sp.yellow, red: sp.red, running: false, done: false });
     }
     setActiveIdx(-1);
   };
@@ -85,28 +82,21 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange,
     setActiveIdx((idx) => (idx >= i ? idx - 1 : idx));
   };
 
-  // sp0's static fields (name/typeLabel/green/yellow/red) don't change while a
-  // speaker is running — only elapsed does, tracked here so the interval can
-  // post() as a plain side effect, never inside a setState updater (React can
-  // invoke updater functions more than once to check purity, which would
-  // double-broadcast).
-  const runInterval = (i, sp0, startElapsed) => {
+  const runInterval = (i, startElapsed) => {
     clearInterval(intervalRef.current);
     let elapsed = startElapsed;
     intervalRef.current = setInterval(() => {
       elapsed += 1;
       setQueue((q) => q.map((item, idx) => idx === i ? { ...item, elapsed } : item));
-      post({ type: 'timer', speaker: sp0.name, typeLabel: sp0.typeLabel, elapsed, green: sp0.green, yellow: sp0.yellow, red: sp0.red, running: true, done: false });
     }, 1000);
   };
 
   const startSpeaker = (i) => {
     if (activeIdx === i) return;
     stopLiveTimer();
-    const sp0 = queue[i];
     setQueue((q) => q.map((item, idx) => idx === i ? { ...item, elapsed: 0, state: 'running', done: false } : item));
     setActiveIdx(i);
-    runInterval(i, sp0, 0);
+    runInterval(i, 0);
   };
 
   const resumeSpeaker = (i) => {
@@ -115,7 +105,7 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange,
     const sp0 = queue[i];
     setQueue((q) => q.map((item, idx) => idx === i ? { ...item, state: 'running' } : item));
     setActiveIdx(i);
-    runInterval(i, sp0, sp0.elapsed || 0);
+    runInterval(i, sp0.elapsed || 0);
   };
 
   const pause = () => stopLiveTimer();
@@ -129,7 +119,6 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange,
     setLog([...log, { name: sp.name, type: sp.typeLabel, green: sp.green, yellow: sp.yellow, red: sp.red, elapsed, within }]);
     setQueue(queue.map((item, idx) => idx === i ? { ...item, done: true, state: 'logged' } : item));
     setActiveIdx(-1);
-    post({ type: 'timer', speaker: sp.name, typeLabel: sp.typeLabel, elapsed: sp.elapsed, green: sp.green, yellow: sp.yellow, red: sp.red, running: false, done: true });
   };
 
   const openReport = () => {
@@ -147,94 +136,17 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange,
     setTimeout(() => setSaveMsg(''), 2500);
   };
 
-  const openDisplayWindow = () => {
-    const url = window.location.href.split('?')[0] + '?display=1';
-    window.open(url, 'tm_display', 'width=1280,height=720,toolbar=0,menubar=0,location=0,status=0');
-  };
-
   return (
     <div>
-      <div className="section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
-        <div>
-          <h2>Timer</h2>
-          <p>Select a speaker, set the type, start the clock</p>
-          <div className="maroon-line"></div>
-        </div>
-        <button className="btn-b" onClick={openDisplayWindow} style={{ alignSelf: 'center', marginTop: 6 }}>📺 Open Display Window</button>
+      <div className="section-head">
+        <h2>Timer</h2>
+        <p>Generate a Zoom background video, then select a speaker, set the type, and start the clock</p>
+        <div className="maroon-line"></div>
       </div>
 
-      <div style={{ background: '#e3f2fd', border: '1px solid #90caf9', borderRadius: 'var(--radius-lg)', padding: '13px 16px', marginBottom: 14, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#1565c0', marginBottom: 3 }}>Don't want to deal with OBS?</div>
-          <div style={{ fontSize: 12, color: '#1565c0' }}>Generate a countdown video instead — download it once and set it directly as your Zoom Virtual Background.</div>
-        </div>
-        <button className="btn-b" onClick={onGoToOtherTools} style={{ flexShrink: 0 }}>⏱ Try Timer Video</button>
+      <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 14, boxShadow: 'var(--shadow)' }}>
+        <TimerVideoTool roster={roster} />
       </div>
-
-      <details style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: 0, marginBottom: 14, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
-        <summary style={{ padding: '13px 18px', cursor: 'pointer', fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em', listStyle: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>📺 How to set up OBS as your Zoom background</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>click to expand ▾</span>
-        </summary>
-        <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--border-light)' }}>
-          <div style={{ margin: '14px 0 18px' }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>📹 Video guide</div>
-            <a href="https://www.youtube.com/watch?v=2JGl902KVok" target="_blank" rel="noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#ff0000', color: 'white', padding: '8px 14px', borderRadius: 'var(--radius)', fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, textDecoration: 'none', letterSpacing: '0.04em' }}>
-              ▶ Watch on YouTube
-            </a>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 10 }}>How to use OBS as a virtual camera in Zoom</span>
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[
-              ['1', 'Download & install OBS', <>Go to <a href="https://obsproject.com" target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontWeight: 600 }}>obsproject.com</a> or search <strong>"OBS Studio"</strong> in the Microsoft Store. Install and open it. No special configuration needed at first launch.</>],
-              ['2', 'Open the Display Window', <>Click <strong>📺 Open Display Window</strong> above for a quick look — but for actual OBS capture, use the launcher script described in the warning below instead; it opens the display without a Chrome address bar. The <strong>OBS Guide</strong> box (top right corner) is on by default, showing where to place your camera — click it to toggle off once you're set up. There's also a <strong>Fullscreen</strong> toggle next to it to hide the window's title bar too.</>],
-              ['3', 'Add a Window Capture in OBS', <>In OBS, under <strong>Sources</strong> → click <strong>+</strong> → select <strong>Window Capture</strong>. In the dropdown, choose the Display Window. Click OK. Right-click the source → <strong>Fit to screen</strong> so it fills the OBS canvas completely.</>],
-              ['4', 'Add your camera on top', <>In OBS → Sources → <strong>+</strong> → <strong>Video Capture Device</strong> → select your webcam. Drag and resize it so it sits exactly over the <em>"PLACE OBS CAMERA HERE"</em> guide in the bottom-right corner.</>],
-              ['5', 'Set OBS as your Zoom camera', <>In Zoom → <strong>Settings → Video → Camera</strong> → select <strong>OBS Virtual Camera</strong>. The timer display will now appear as your video background.</>],
-            ].map(([n, title, body]) => (
-              <div key={n} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <div style={{ minWidth: 26, height: 26, borderRadius: '50%', background: 'var(--maroon)', color: 'white', fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</div>
-                <div>
-                  <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{title}</div>
-                  <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>{body}</div>
-                </div>
-              </div>
-            ))}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 26, height: 26, borderRadius: '50%', background: '#e65100', color: 'white', fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>⚠</div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#e65100', marginBottom: 3 }}>Disable auto-framing in Zoom</div>
-                <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>In Zoom → Settings → Video → uncheck <strong>"Auto-adjust my video"</strong> or <strong>"Auto-frame my video"</strong>. If left on, Zoom will detect your face and zoom in, cutting off the timer display.</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 26, height: 26, borderRadius: '50%', background: '#e65100', color: 'white', fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>⚠</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, color: '#e65100', marginBottom: 3 }}>Numbers freeze on OBS, or the address bar shows in the capture</div>
-                <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  Both are Windows/Chrome quirks with plain browser windows: Chrome stops repainting a window once something covers it — even though OBS is still capturing it, which is why hovering the taskbar icon "unsticks" it for a frame — and Chrome now always shows the address bar in popup windows for security, regardless of what a site asks for. Fix both at once with a small launcher script instead of the Display Window button:
-                  <ol style={{ margin: '8px 0', paddingLeft: 18 }}>
-                    <li style={{ marginBottom: 4 }}>Open Notepad, paste this in (swap the URL for wherever the toolkit is hosted for your club):</li>
-                  </ol>
-                  <pre style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px', fontSize: 11, overflowX: 'auto', whiteSpace: 'pre', fontFamily: "'Courier New',monospace", margin: '4px 0 10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-{`@echo off
-taskkill /F /IM chrome.exe >nul 2>&1
-timeout /t 2 /nobreak >nul
-start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows --disable-renderer-backgrounding "https://tm-toolkit.github.io/toastmasters-toolkit/"
-timeout /t 3 /nobreak >nul
-start "" "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --app="https://tm-toolkit.github.io/toastmasters-toolkit/?display=1"`}
-                  </pre>
-                  <ol start={2} style={{ margin: '0', paddingLeft: 18 }}>
-                    <li style={{ marginBottom: 4 }}><strong>File → Save As</strong> → name it <strong>OBS Display.bat</strong>, and set "Save as type" to <strong>All Files</strong> (otherwise Notepad appends .txt).</li>
-                    <li style={{ marginBottom: 4 }}>Double-click it whenever you're setting up OBS — it closes Chrome, reopens the toolkit normally for Session control, and opens the Display Window separately with no address bar. Click the <strong>Fullscreen</strong> toggle inside it (top right) to hide the title bar too, so OBS captures pure content.</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </details>
 
       <div style={{ background: 'var(--white)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: 14, boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>

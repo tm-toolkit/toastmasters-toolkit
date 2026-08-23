@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Chart } from 'chart.js/auto';
 import { motion } from 'framer-motion';
 import { toPng } from 'html-to-image';
-import { FILLERS } from '../lib/constants';
+import { FILLERS, GS_ENDPOINT } from '../lib/constants';
 import { secToMmSs } from '../lib/format';
 import { getChartDataByRole, applyFilters } from '../lib/chartData';
 import { CATS, fmtDateShort } from '../lib/chartHelpers';
@@ -153,7 +153,7 @@ function SpeakerTimeReport({ timerRaw }) {
   );
 }
 
-export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
+export default function ChartsTab({ history }) {
   const [viewMode, setViewMode] = useState('both');
   const [selSpeakers, setSelSpeakers] = useState([]);
   const [selCats, setSelCats] = useState([]);
@@ -266,13 +266,11 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
   useEffect(() => () => { Object.keys(chartsRef.current).forEach(destroy); }, []);
 
   const handleLoadFromSheets = useCallback(async () => {
-    const endpoint = gsEndpoint.trim();
-    if (!endpoint) { setLoadStatus({ msg: 'Paste the Google Apps Script URL above.', type: 'err' }); return; }
     setLoadStatus({ msg: 'Loading from Google Sheets…', type: 'info' });
-    const rows = await loadFromSheets(endpoint);
+    const rows = await loadFromSheets(GS_ENDPOINT);
     setSheetsData(rows);
     setLoadStatus({ msg: `✓ Loaded ${rows.length} row(s) from Sheets.`, type: 'ok' });
-  }, [gsEndpoint]);
+  }, []);
 
   const handleDownloadReport = useCallback(async () => {
     if (!reportRef.current || downloading) return;
@@ -335,11 +333,6 @@ export default function ChartsTab({ history, gsEndpoint, setGsEndpoint }) {
             onChange={(e) => setDateTo(e.target.value)} />
         </div>
         <button className="btn-s" style={{ alignSelf: 'flex-end', height: 35 }} onClick={() => { setDateFrom(''); setDateTo(''); }}>✕ Clear dates</button>
-        <div className="fg" style={{ minWidth: 200 }}>
-          <span className="fl">Apps Script URL</span>
-          <input className="fi" type="text" placeholder="Paste Web App URL" style={{ fontSize: 12 }}
-            value={gsEndpoint} onChange={(e) => setGsEndpoint(e.target.value)} />
-        </div>
         <button className="btn-b" style={{ alignSelf: 'flex-end' }} onClick={handleLoadFromSheets}>↓ Load from Sheets</button>
         <button className="btn-s" style={{ alignSelf: 'flex-end', height: 35, marginLeft: 'auto' }} onClick={handleDownloadReport} disabled={downloading}>
           {downloading ? 'Generating…' : '⬇ Download report (PNG)'}

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import HistoryTab from './HistoryTab';
 import * as googleSheets from '../lib/googleSheets';
+import { GS_ENDPOINT } from '../lib/constants';
 
 vi.mock('../lib/googleSheets', () => ({
   exportAllToSheets: vi.fn(),
@@ -15,8 +16,6 @@ function setup(overrides = {}) {
   const props = {
     history: [],
     setHistory: vi.fn(),
-    gsEndpoint: '',
-    setGsEndpoint: vi.fn(),
     ...overrides,
   };
   render(<HistoryTab {...props} />);
@@ -55,7 +54,7 @@ describe('HistoryTab', () => {
     // spy can't observe the re-render this behavior depends on.
     function StatefulWrapper() {
       const [history, setHistory] = useState([ahRecord]);
-      return <HistoryTab history={history} setHistory={setHistory} gsEndpoint="" setGsEndpoint={() => {}} />;
+      return <HistoryTab history={history} setHistory={setHistory} />;
     }
     render(<StatefulWrapper />);
 
@@ -70,15 +69,8 @@ describe('HistoryTab', () => {
     // so the underlying "undo" state being cleared is what actually matters.
   });
 
-  it('shows an error status instead of the export modal when no endpoint is set', () => {
-    setup({ history: [ahRecord], gsEndpoint: '' });
-    fireEvent.click(screen.getByText('📤 Export to Sheets'));
-    expect(screen.getByText('Paste the Apps Script URL first.')).toBeInTheDocument();
-    expect(screen.queryByText('Confirm Export to Google Sheets')).not.toBeInTheDocument();
-  });
-
-  it('opens the confirm modal when an endpoint is set, and cancel closes it without exporting', () => {
-    setup({ history: [ahRecord], gsEndpoint: 'https://script.google.com/fake' });
+  it('opens the confirm modal on export, and cancel closes it without exporting', () => {
+    setup({ history: [ahRecord] });
     fireEvent.click(screen.getByText('📤 Export to Sheets'));
     expect(screen.getByText('Confirm Export to Google Sheets')).toBeInTheDocument();
 
@@ -87,13 +79,13 @@ describe('HistoryTab', () => {
     expect(googleSheets.exportAllToSheets).not.toHaveBeenCalled();
   });
 
-  it('calls exportAllToSheets and reports the result on confirm', async () => {
+  it('calls exportAllToSheets with the fixed endpoint and reports the result on confirm', async () => {
     googleSheets.exportAllToSheets.mockResolvedValue({ result: 'success', inserted: 1, updated: 0, skipped: 0 });
-    setup({ history: [ahRecord], gsEndpoint: 'https://script.google.com/fake' });
+    setup({ history: [ahRecord] });
     fireEvent.click(screen.getByText('📤 Export to Sheets'));
     fireEvent.click(screen.getByText('✅ Yes — Export now'));
 
-    await waitFor(() => expect(googleSheets.exportAllToSheets).toHaveBeenCalledWith([ahRecord], 'https://script.google.com/fake'));
+    await waitFor(() => expect(googleSheets.exportAllToSheets).toHaveBeenCalledWith([ahRecord], GS_ENDPOINT));
     await waitFor(() => expect(screen.getByText(/1 inserted/)).toBeInTheDocument());
   });
 

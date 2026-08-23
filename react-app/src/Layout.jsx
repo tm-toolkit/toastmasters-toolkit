@@ -17,7 +17,6 @@ export default function Layout() {
   const [roster, setRoster] = useLocalStorageState('tmRoster', []);
   const [currentRole, setCurrentRole] = useLocalStorageState('tmRole', 'ah', { raw: true });
   const [history, setHistory] = useLocalStorageState('tmHistory', []);
-  const [gsEndpoint, setGsEndpoint] = useLocalStorageState('gsEndpoint', '', { raw: true });
   const [userName, setUserName] = useLocalStorageState('tmUserName', '', { raw: true });
   const [userPosition, setUserPosition] = useLocalStorageState('tmUserPosition', 'Club Member', { raw: true });
   const [ahCount, setAhCount] = useState(0);
@@ -59,16 +58,10 @@ export default function Layout() {
           <HistoryTab
             history={history}
             setHistory={setHistory}
-            gsEndpoint={gsEndpoint}
-            setGsEndpoint={setGsEndpoint}
           />
         </div>
         <div className={'tab-panel' + (activeTab === 'charts' ? ' active' : '')}>
-          <ChartsTab
-            history={history}
-            gsEndpoint={gsEndpoint}
-            setGsEndpoint={setGsEndpoint}
-          />
+          <ChartsTab history={history} />
         </div>
         <div className={'tab-panel' + (activeTab === 'tools' ? ' active' : '')}>
           <OtherToolsTab userPosition={userPosition} roster={roster} />

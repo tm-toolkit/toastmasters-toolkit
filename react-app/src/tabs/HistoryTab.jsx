@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FILLERS } from '../lib/constants';
+import { FILLERS, GS_ENDPOINT } from '../lib/constants';
 import { secToMmSs } from '../lib/format';
 import { exportAllToSheets } from '../lib/googleSheets';
 
@@ -13,7 +13,7 @@ const FILTERS = [
   { id: 'Topics', label: 'Topics' },
 ];
 
-export default function HistoryTab({ history, setHistory, gsEndpoint, setGsEndpoint }) {
+export default function HistoryTab({ history, setHistory }) {
   const [filter, setFilter] = useState('all');
   const [gsStatus, setGsStatus] = useState(null); // {msg, type}
   const [showExportModal, setShowExportModal] = useState(false);
@@ -65,14 +65,13 @@ export default function HistoryTab({ history, setHistory, gsEndpoint, setGsEndpo
 
   const openExportConfirm = () => {
     if (!history.length) return showStatus('No records to export.', 'info');
-    if (!gsEndpoint.trim()) return showStatus('Paste the Apps Script URL first.', 'err');
     setShowExportModal(true);
   };
 
   const confirmExport = async () => {
     setShowExportModal(false);
     showStatus('Sending to Google Sheets…', 'info');
-    const result = await exportAllToSheets(history, gsEndpoint.trim());
+    const result = await exportAllToSheets(history, GS_ENDPOINT);
     if (result.result === 'success') {
       setHistory(history.map((r) => (r.needsUpdate ? { ...r, needsUpdate: false } : r)));
       showStatus(`✓ ${result.inserted || 0} inserted · ${result.updated || 0} updated · ${result.skipped || 0} skipped`, 'ok');
@@ -93,10 +92,6 @@ export default function HistoryTab({ history, setHistory, gsEndpoint, setGsEndpo
 
       <div className="gs-wrap">
         <div className="gs-row">
-          <input
-            type="text" placeholder="Apps Script Web App URL"
-            value={gsEndpoint} onChange={(e) => setGsEndpoint(e.target.value)}
-          />
           <button className="btn-p" onClick={openExportConfirm}>📤 Export to Sheets</button>
         </div>
         <div className="note">Confirm session is over before exporting. Idempotent — existing Row IDs skipped.</div>

@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FILLERS, GS_ENDPOINT } from '../lib/constants';
-import { secToMmSs } from '../lib/format';
+import { secToMmSs, parseMmSs } from '../lib/format';
 import { exportAllToSheets } from '../lib/googleSheets';
 
 const FILTERS = [
@@ -19,6 +19,8 @@ export default function HistoryTab({ history, setHistory }) {
   const [showExportModal, setShowExportModal] = useState(false);
   const [undo, setUndo] = useState(null); // {item, idx}
   const undoTimeoutRef = useRef(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editValue, setEditValue] = useState('');
 
   const records = useMemo(() => {
     if (filter === 'all') return history;
@@ -56,6 +58,24 @@ export default function HistoryTab({ history, setHistory }) {
     next.splice(undo.idx, 0, undo.item);
     setHistory(next);
     setUndo(null);
+  };
+
+  const startEditTimer = (r) => {
+    setEditingId(r.rowId);
+    setEditValue(secToMmSs(r.elapsed || 0));
+  };
+
+  const cancelEditTimer = () => {
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  const saveEditTimer = (globalIdx, r) => {
+    const elapsed = parseMmSs(editValue);
+    const within = elapsed >= (r.green || 0) && elapsed <= (r.red || 0);
+    setHistory(history.map((item, i) => (i === globalIdx ? { ...item, elapsed, within, needsUpdate: true } : item)));
+    setEditingId(null);
+    setEditValue('');
   };
 
   const clearAll = () => {
@@ -166,6 +186,7 @@ export default function HistoryTab({ history, setHistory }) {
                     <tbody>
                       {tmRecs.map((r) => {
                         const gi = history.indexOf(r);
+                        const isEditing = editingId === r.rowId;
                         return (
                           <tr key={r.rowId}>
                             <td>{r.date}</td>
@@ -174,9 +195,31 @@ export default function HistoryTab({ history, setHistory }) {
                             <td>{secToMmSs(r.green || 0)}</td>
                             <td>{secToMmSs(r.yellow || 0)}</td>
                             <td>{secToMmSs(r.red || 0)}</td>
-                            <td style={{ fontWeight: 700 }}>{secToMmSs(r.elapsed || 0)}</td>
+                            <td style={{ fontWeight: 700 }}>
+                              {isEditing ? (
+                                <input
+                                  type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)}
+                                  style={{ width: 56, fontSize: 12, padding: '2px 4px', border: '1.5px solid var(--maroon)', borderRadius: 4, textAlign: 'center' }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <>{secToMmSs(r.elapsed || 0)}{r.needsUpdate ? ' 🔄' : ''}</>
+                              )}
+                            </td>
                             <td className={r.within ? 'within' : 'over-time'}>{r.within ? '✓' : '✗'}</td>
-                            <td><button className="btn-d" onClick={() => deleteItem(gi)}>✕</button></td>
+                            <td style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                              {isEditing ? (
+                                <>
+                                  <button className="btn-d" style={{ borderColor: 'var(--green)', color: 'var(--green)' }} onClick={() => saveEditTimer(gi, r)}>✓</button>
+                                  <button className="btn-d" onClick={cancelEditTimer}>✕</button>
+                                </>
+                              ) : (
+                                <>
+                                  <button className="btn-d" onClick={() => startEditTimer(r)}>✎</button>
+                                  <button className="btn-d" onClick={() => deleteItem(gi)}>✕</button>
+                                </>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}

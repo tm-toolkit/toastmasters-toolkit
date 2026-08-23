@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { secToMmSs } from '../../lib/format';
+import { secToMmSs, parseMmSs } from '../../lib/format';
 import { getPreset, TYPE_LABELS } from '../../lib/timerPresets';
 import { buildTimerSaveHistory } from '../../lib/timerHistory';
 import ReportModal from '../../components/ReportModal';
@@ -41,6 +41,8 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
   const [customTotal, setCustomTotal] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [report, setReport] = useState(null);
+  const [editingLogIdx, setEditingLogIdx] = useState(-1);
+  const [logEditValue, setLogEditValue] = useState('');
   const intervalRef = useRef(null);
 
   useEffect(() => { onCountChange?.(queue.length); }, [queue, onCountChange]);
@@ -120,6 +122,25 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
     setLog([...log, { name: sp.name, type: sp.typeLabel, green: sp.green, yellow: sp.yellow, red: sp.red, elapsed, within }]);
     setQueue(queue.map((item, idx) => idx === i ? { ...item, done: true, state: 'logged' } : item));
     setActiveIdx(-1);
+  };
+
+  const startEditLog = (i) => {
+    setEditingLogIdx(i);
+    setLogEditValue(secToMmSs(log[i].elapsed));
+  };
+
+  const cancelEditLog = () => {
+    setEditingLogIdx(-1);
+    setLogEditValue('');
+  };
+
+  const saveEditLog = (i) => {
+    const elapsed = parseMmSs(logEditValue);
+    const r = log[i];
+    const within = elapsed >= r.green && elapsed <= r.red;
+    setLog(log.map((item, idx) => (idx === i ? { ...item, elapsed, within } : item)));
+    setEditingLogIdx(-1);
+    setLogEditValue('');
   };
 
   const openReport = () => {
@@ -244,16 +265,37 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table>
-              <thead><tr><th>Speaker</th><th>Type</th><th>Green</th><th>Yellow</th><th>Red</th><th>Actual</th><th>Within?</th></tr></thead>
+              <thead><tr><th>Speaker</th><th>Type</th><th>Green</th><th>Yellow</th><th>Red</th><th>Actual</th><th>Within?</th><th></th></tr></thead>
               <tbody>
-                {log.map((r, i) => (
-                  <tr key={i}>
-                    <td>{r.name}</td><td>{r.type}</td>
-                    <td>{secToMmSs(r.green)}</td><td>{secToMmSs(r.yellow)}</td><td>{secToMmSs(r.red)}</td>
-                    <td style={{ fontWeight: 700 }}>{secToMmSs(r.elapsed)}</td>
-                    <td className={r.within ? 'within' : 'over-time'}>{r.within ? '✓ Yes' : '✗ No'}</td>
-                  </tr>
-                ))}
+                {log.map((r, i) => {
+                  const isEditing = editingLogIdx === i;
+                  return (
+                    <tr key={i}>
+                      <td>{r.name}</td><td>{r.type}</td>
+                      <td>{secToMmSs(r.green)}</td><td>{secToMmSs(r.yellow)}</td><td>{secToMmSs(r.red)}</td>
+                      <td style={{ fontWeight: 700 }}>
+                        {isEditing ? (
+                          <input
+                            type="text" value={logEditValue} onChange={(e) => setLogEditValue(e.target.value)}
+                            style={{ width: 56, fontSize: 12, padding: '2px 4px', border: '1.5px solid var(--maroon)', borderRadius: 4, textAlign: 'center' }}
+                            autoFocus
+                          />
+                        ) : secToMmSs(r.elapsed)}
+                      </td>
+                      <td className={r.within ? 'within' : 'over-time'}>{r.within ? '✓ Yes' : '✗ No'}</td>
+                      <td style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                        {isEditing ? (
+                          <>
+                            <button className="btn-d" style={{ borderColor: 'var(--green)', color: 'var(--green)' }} onClick={() => saveEditLog(i)}>✓</button>
+                            <button className="btn-d" onClick={cancelEditLog}>✕</button>
+                          </>
+                        ) : (
+                          <button className="btn-d" onClick={() => startEditLog(i)}>✎</button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

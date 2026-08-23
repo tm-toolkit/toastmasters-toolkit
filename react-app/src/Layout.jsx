@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import NavTabs from './components/NavTabs';
 import RosterTab from './tabs/RosterTab';
@@ -21,6 +21,19 @@ export default function Layout() {
   const [userPosition, setUserPosition] = useLocalStorageState('tmUserPosition', 'Club Member', { raw: true });
   const [ahCount, setAhCount] = useState(0);
   const [timerCount, setTimerCount] = useState(0);
+
+  // One-time local migration: "Custom" used to be its own category label, but
+  // it only ever meant "custom duration" — it now reports as Speech (see
+  // timerPresets.js). Relabel any already-saved records so they show up in
+  // the Charts/History Speech column too, and flag them for re-export so the
+  // correction propagates to Sheets on the next "Export to Sheets".
+  useEffect(() => {
+    if (history.some((r) => r.cat === 'Custom')) {
+      setHistory(history.map((r) => (r.cat === 'Custom' ? { ...r, cat: 'Speech', needsUpdate: true } : r)));
+    }
+    // Intentionally run once on mount only — this is a one-time migration.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sessionPillText = currentRole === 'ah'
     ? (ahCount ? `${ahCount} speaker${ahCount !== 1 ? 's' : ''}` : 'No session')

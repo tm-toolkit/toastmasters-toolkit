@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import PhotoPostTool from './tools/PhotoPostTool';
 import ZoomBackgroundTool from './tools/ZoomBackgroundTool';
+import ScreenRecorderTool from './tools/ScreenRecorderTool';
 
 const TOOLS = [
   { id: 'photo', label: '📸 Meeting Photo', Component: PhotoPostTool },
   { id: 'zoom', label: '🖥 Zoom Background', Component: ZoomBackgroundTool },
+  { id: 'screenrec', label: '🎬 Screen Recorder', Component: ScreenRecorderTool },
 ];
 
 export default function OtherToolsTab({ userPosition, roster }) {

@@ -76,16 +76,17 @@ const SPEAKER_COLORS = [
   '#C2185B', '#8D6E63', '#558B2F', '#F9A825', '#5C6BC0', '#00897B',
 ];
 
-// Same green/yellow/red mental model the Timer already uses live — no axes,
-// no quartiles, just "was this speech short, on time, close, or over."
-const STATUS_COLOR = { under: '#a9b2b1', good: '#0ca30c', warn: '#fab219', over: '#d03b3b' };
-const STATUS_LABEL = { under: 'Under time', good: 'Within time', warn: 'Cutting it close', over: 'Over time' };
+// Matches the Timer's own within = elapsed >= green && elapsed <= red exactly
+// (same rule used to log/save each speech) — the whole green-to-red range
+// counts as within time, not just up to yellow. Yellow is only a spoken
+// warning cue during the speech, not a second, stricter time limit.
+const STATUS_COLOR = { under: '#a9b2b1', good: '#0ca30c', over: '#d03b3b' };
+const STATUS_LABEL = { under: 'Under time', good: 'Within time', over: 'Over time' };
 
 function speechStatus(r) {
   const e = r.elapsed || 0;
   if (e < (r.green || 0)) return 'under';
   if (e > (r.red || 0)) return 'over';
-  if (e >= (r.yellow || 0)) return 'warn';
   return 'good';
 }
 

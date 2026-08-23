@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import { FILLERS, GS_ENDPOINT } from '../lib/constants';
 import { secToMmSs } from '../lib/format';
+import { isWithinTime } from '../lib/timerPresets';
 import { getChartDataByRole, applyFilters } from '../lib/chartData';
 import { CATS, fmtDateShort } from '../lib/chartHelpers';
 import { loadFromSheets } from '../lib/googleSheets';
@@ -86,7 +87,7 @@ const STATUS_LABEL = { under: 'Under time', good: 'Within time', over: 'Over tim
 function speechStatus(r) {
   const e = r.elapsed || 0;
   if (e < (r.green || 0)) return 'under';
-  if (e > (r.red || 0)) return 'over';
+  if (!isWithinTime(e, r.green, r.red)) return 'over';
   return 'good';
 }
 

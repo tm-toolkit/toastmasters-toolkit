@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { secToMmSs, parseMmSs } from '../../lib/format';
-import { getPreset, TYPE_LABELS } from '../../lib/timerPresets';
+import { getPreset, TYPE_LABELS, isWithinTime } from '../../lib/timerPresets';
 import { buildTimerSaveHistory } from '../../lib/timerHistory';
 import ReportModal from '../../components/ReportModal';
 import TimerVideoTool from '../tools/TimerVideoTool';
@@ -118,7 +118,7 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
     clearInterval(intervalRef.current);
     intervalRef.current = null;
     const elapsed = sp.elapsed || 0;
-    const within = elapsed >= sp.green && elapsed <= sp.red;
+    const within = isWithinTime(elapsed, sp.green, sp.red);
     setLog([...log, { name: sp.name, type: sp.typeLabel, green: sp.green, yellow: sp.yellow, red: sp.red, elapsed, within }]);
     setQueue(queue.map((item, idx) => idx === i ? { ...item, done: true, state: 'logged' } : item));
     setActiveIdx(-1);
@@ -137,7 +137,7 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
   const saveEditLog = (i) => {
     const elapsed = parseMmSs(logEditValue);
     const r = log[i];
-    const within = elapsed >= r.green && elapsed <= r.red;
+    const within = isWithinTime(elapsed, r.green, r.red);
     setLog(log.map((item, idx) => (idx === i ? { ...item, elapsed, within } : item)));
     setEditingLogIdx(-1);
     setLogEditValue('');

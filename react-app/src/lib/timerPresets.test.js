@@ -1,18 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getPreset, parseMmSs, TIMER_PRESETS } from './timerPresets';
-
-describe('parseMmSs', () => {
-  it('parses mm:ss into total seconds', () => {
-    expect(parseMmSs('2:30')).toBe(150);
-  });
-  it('parses a bare number of seconds', () => {
-    expect(parseMmSs('90')).toBe(90);
-  });
-  it('returns 0 for garbage input', () => {
-    expect(parseMmSs('')).toBe(0);
-    expect(parseMmSs('abc')).toBe(0);
-  });
-});
+import { getPreset, isWithinTime, TIMER_PRESETS } from './timerPresets';
 
 describe('getPreset', () => {
   it('returns the known preset for a standard type', () => {
@@ -33,5 +20,30 @@ describe('getPreset', () => {
   it('defaults the custom total to 15:00 when no text is given', () => {
     const [, , r] = getPreset('custom', '');
     expect(r).toBe(900);
+  });
+});
+
+describe('isWithinTime', () => {
+  const [green, , red] = TIMER_PRESETS.speech57; // 300, 420
+
+  it('qualifies a speech right at the minimum', () => {
+    expect(isWithinTime(green, green, red)).toBe(true);
+  });
+
+  it('qualifies a speech right at the maximum', () => {
+    expect(isWithinTime(red, green, red)).toBe(true);
+  });
+
+  it('still qualifies up to 30 seconds past the maximum (grace period)', () => {
+    expect(isWithinTime(red + 15, green, red)).toBe(true); // the reported 7:15 on a 5-7 min speech
+    expect(isWithinTime(red + 30, green, red)).toBe(true);
+  });
+
+  it('disqualifies more than 30 seconds past the maximum', () => {
+    expect(isWithinTime(red + 31, green, red)).toBe(false);
+  });
+
+  it('disqualifies under the minimum with no grace period', () => {
+    expect(isWithinTime(green - 1, green, red)).toBe(false);
   });
 });

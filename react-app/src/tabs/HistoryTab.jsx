@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FILLERS, GS_ENDPOINT } from '../lib/constants';
 import { secToMmSs, parseMmSs } from '../lib/format';
+import { isWithinTime } from '../lib/timerPresets';
 import { exportAllToSheets } from '../lib/googleSheets';
 
 const FILTERS = [
@@ -72,7 +73,7 @@ export default function HistoryTab({ history, setHistory }) {
 
   const saveEditTimer = (globalIdx, r) => {
     const elapsed = parseMmSs(editValue);
-    const within = elapsed >= (r.green || 0) && elapsed <= (r.red || 0);
+    const within = isWithinTime(elapsed, r.green, r.red);
     setHistory(history.map((item, i) => (i === globalIdx ? { ...item, elapsed, within, needsUpdate: true } : item)));
     setEditingId(null);
     setEditValue('');

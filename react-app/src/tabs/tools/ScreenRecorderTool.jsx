@@ -22,6 +22,8 @@ function fmtElapsed(sec) {
 export default function ScreenRecorderTool() {
   const [status, setStatus] = useState('idle'); // idle | recording | done | unsupported
   const [includeMic, setIncludeMic] = useState(true);
+  const [micDevices, setMicDevices] = useState([]);
+  const [micDeviceId, setMicDeviceId] = useState('');
   const [elapsed, setElapsed] = useState(0);
   const [videoUrl, setVideoUrl] = useState(null);
   const [mimeType, setMimeType] = useState('');
@@ -37,6 +39,39 @@ export default function ScreenRecorderTool() {
       setStatus('unsupported');
     }
   }, []);
+
+  const refreshMicDevices = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const mics = devices.filter((d) => d.kind === 'audioinput');
+      setMicDevices(mics);
+      setMicDeviceId((prev) => (mics.some((m) => m.deviceId === prev) ? prev : (mics[0]?.deviceId || '')));
+    } catch {
+      // Device enumeration unsupported or blocked — recording still falls back to the OS default mic.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === 'unsupported') return;
+    refreshMicDevices();
+    navigator.mediaDevices?.addEventListener?.('devicechange', refreshMicDevices);
+    return () => navigator.mediaDevices?.removeEventListener?.('devicechange', refreshMicDevices);
+  }, [status, refreshMicDevices]);
+
+  // Device labels are blank until mic permission has been granted once — prime it
+  // so the dropdown shows real names (e.g. "Blue Yeti") instead of "Microphone 1".
+  useEffect(() => {
+    if (!includeMic || status !== 'idle' || micDevices.some((d) => d.label)) return;
+    (async () => {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        s.getTracks().forEach((t) => t.stop());
+        refreshMicDevices();
+      } catch {
+        // Permission denied or no mic present — leave the list as-is.
+      }
+    })();
+  }, [includeMic, status, micDevices, refreshMicDevices]);
 
   useEffect(() => () => {
     clearInterval(intervalRef.current);
@@ -67,7 +102,9 @@ export default function ScreenRecorderTool() {
 
       if (includeMic) {
         try {
-          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const micStream = await navigator.mediaDevices.getUserMedia({
+            audio: micDeviceId ? { deviceId: { exact: micDeviceId } } : true,
+          });
           audioCtx = new AudioContext();
           const dest = audioCtx.createMediaStreamDestination();
           if (audioTracks.length) audioCtx.createMediaStreamSource(new MediaStream(audioTracks)).connect(dest);
@@ -107,7 +144,7 @@ export default function ScreenRecorderTool() {
     } catch (err) {
       if (err.name !== 'NotAllowedError') setError("Couldn't start screen recording. Please try again.");
     }
-  }, [includeMic, stopRecording]);
+  }, [includeMic, micDeviceId, stopRecording]);
 
   const reset = () => {
     if (videoUrl) URL.revokeObjectURL(videoUrl);
@@ -140,10 +177,20 @@ export default function ScreenRecorderTool() {
 
       {status === 'idle' && (
         <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 14, cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 10, cursor: 'pointer' }}>
             <input type="checkbox" checked={includeMic} onChange={(e) => setIncludeMic(e.target.checked)} />
             🎙️ Include microphone narration
           </label>
+          {includeMic && micDevices.length > 0 && (
+            <div className="fg" style={{ maxWidth: 280, marginBottom: 14 }}>
+              <span className="fl">Microphone</span>
+              <select className="fs" value={micDeviceId} onChange={(e) => setMicDeviceId(e.target.value)}>
+                {micDevices.map((d, i) => (
+                  <option key={d.deviceId || i} value={d.deviceId}>{d.label || `Microphone ${i + 1}`}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <motion.button className="btn-b" whileTap={{ scale: 0.96 }} onClick={startRecording}>
             ⏺ Start Recording
           </motion.button>

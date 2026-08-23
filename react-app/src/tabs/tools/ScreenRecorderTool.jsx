@@ -1,17 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-
-const MIME_CANDIDATES = [
-  'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-  'video/webm;codecs=vp9,opus',
-  'video/webm;codecs=vp8,opus',
-  'video/webm',
-];
-
-function pickMimeType() {
-  if (typeof MediaRecorder === 'undefined') return '';
-  return MIME_CANDIDATES.find((t) => MediaRecorder.isTypeSupported(t)) || '';
-}
+import { Output, Mp4OutputFormat, BufferTarget, MediaStreamVideoTrackSource, MediaStreamAudioTrackSource, QUALITY_HIGH } from 'mediabunny';
 
 function fmtElapsed(sec) {
   const m = Math.floor(sec / 60);
@@ -20,22 +9,22 @@ function fmtElapsed(sec) {
 }
 
 export default function ScreenRecorderTool() {
-  const [status, setStatus] = useState('idle'); // idle | recording | done | unsupported
+  const [status, setStatus] = useState('idle'); // idle | recording | finishing | done | unsupported
   const [includeMic, setIncludeMic] = useState(true);
   const [micDevices, setMicDevices] = useState([]);
   const [micDeviceId, setMicDeviceId] = useState('');
   const [elapsed, setElapsed] = useState(0);
   const [videoUrl, setVideoUrl] = useState(null);
-  const [mimeType, setMimeType] = useState('');
   const [error, setError] = useState('');
 
-  const recorderRef = useRef(null);
-  const chunksRef = useRef([]);
+  const outputRef = useRef(null);
+  const videoSourceRef = useRef(null);
+  const audioSourceRef = useRef(null);
   const cleanupRef = useRef(() => {});
   const intervalRef = useRef(null);
 
   useEffect(() => {
-    if (!navigator.mediaDevices?.getDisplayMedia || typeof MediaRecorder === 'undefined') {
+    if (!navigator.mediaDevices?.getDisplayMedia || typeof VideoEncoder === 'undefined') {
       setStatus('unsupported');
     }
   }, []);
@@ -81,11 +70,30 @@ export default function ScreenRecorderTool() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const stopRecording = useCallback(() => {
+  // Muxes straight into a real MP4 via Mediabunny/WebCodecs (MediaStreamVideoTrackSource
+  // + MediaStreamAudioTrackSource pull frames live off the tracks) instead of MediaRecorder —
+  // Chrome's MediaRecorder essentially never actually produces video/mp4 in practice, silently
+  // falling back to WebM, which is what made recordings hard to share (many apps on phones/
+  // social platforms don't preview or accept .webm).
+  const stopRecording = useCallback(async () => {
     clearInterval(intervalRef.current);
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      recorderRef.current.stop();
+    if (!outputRef.current) return;
+    setStatus('finishing');
+    videoSourceRef.current?.close();
+    audioSourceRef.current?.close();
+    const output = outputRef.current;
+    outputRef.current = null;
+    try {
+      await output.finalize();
+      const blob = new Blob([output.target.buffer], { type: 'video/mp4' });
+      setVideoUrl(URL.createObjectURL(blob));
+      setStatus('done');
+    } catch {
+      setError("Couldn't finish the recording. Please try again.");
+      setStatus('idle');
     }
+    cleanupRef.current();
+    cleanupRef.current = () => {};
   }, []);
 
   const startRecording = useCallback(async () => {
@@ -96,7 +104,7 @@ export default function ScreenRecorderTool() {
         audio: true,
       });
       const videoTrack = displayStream.getVideoTracks()[0];
-      let audioTracks = displayStream.getAudioTracks();
+      let audioTrack = displayStream.getAudioTracks()[0] || null;
       const stopTracks = [...displayStream.getTracks()];
       let audioCtx = null;
 
@@ -107,28 +115,23 @@ export default function ScreenRecorderTool() {
           });
           audioCtx = new AudioContext();
           const dest = audioCtx.createMediaStreamDestination();
-          if (audioTracks.length) audioCtx.createMediaStreamSource(new MediaStream(audioTracks)).connect(dest);
+          if (audioTrack) audioCtx.createMediaStreamSource(new MediaStream([audioTrack])).connect(dest);
           audioCtx.createMediaStreamSource(micStream).connect(dest);
-          audioTracks = dest.stream.getAudioTracks();
+          audioTrack = dest.stream.getAudioTracks()[0];
           stopTracks.push(...micStream.getTracks());
         } catch {
           // Mic permission denied or unavailable — fall back to screen/tab audio only.
         }
       }
 
-      const combined = new MediaStream([videoTrack, ...audioTracks]);
-      const chosenMime = pickMimeType();
-      setMimeType(chosenMime);
-      const recorder = new MediaRecorder(combined, chosenMime ? { mimeType: chosenMime } : undefined);
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: chosenMime || 'video/webm' });
-        setVideoUrl(URL.createObjectURL(blob));
-        setStatus('done');
-        stopTracks.forEach((t) => t.stop());
-        audioCtx?.close();
-      };
+      const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+      const videoSource = new MediaStreamVideoTrackSource(videoTrack, { codec: 'avc', bitrate: QUALITY_HIGH });
+      output.addVideoTrack(videoSource);
+      let audioSource = null;
+      if (audioTrack) {
+        audioSource = new MediaStreamAudioTrackSource(audioTrack, { codec: 'aac', bitrate: 128_000 });
+        output.addAudioTrack(audioSource);
+      }
 
       cleanupRef.current = () => {
         stopTracks.forEach((t) => t.stop());
@@ -136,8 +139,11 @@ export default function ScreenRecorderTool() {
       };
       videoTrack.onended = stopRecording;
 
-      recorderRef.current = recorder;
-      recorder.start();
+      await output.start();
+      outputRef.current = output;
+      videoSourceRef.current = videoSource;
+      audioSourceRef.current = audioSource;
+
       setStatus('recording');
       setElapsed(0);
       intervalRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -153,15 +159,14 @@ export default function ScreenRecorderTool() {
     setElapsed(0);
   };
 
-  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-  const downloadName = `screen-recording-${new Date().toISOString().slice(0, 10)}.${ext}`;
+  const downloadName = `screen-recording-${new Date().toISOString().slice(0, 10)}.mp4`;
 
   return (
     <div>
       <h3 className="tool-title">🎬 Screen Recorder</h3>
       <p className="tool-desc">
-        Record your screen — with optional microphone narration — right in the browser. No extra software,
-        great for quick tutorials or walkthroughs for club members.
+        Record your screen — with optional microphone narration — right in the browser. Saves as a real MP4,
+        so it's easy to share on WhatsApp, Instagram, or wherever club members will watch it.
       </p>
 
       {status === 'unsupported' && (
@@ -209,6 +214,17 @@ export default function ScreenRecorderTool() {
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pick "Stop sharing" in the browser bar, or click Stop.</div>
           </div>
           <button className="btn-d" onClick={stopRecording}>⏹ Stop</button>
+        </motion.div>
+      )}
+
+      {status === 'finishing' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+            style={{ width: 30, height: 30, borderRadius: '50%', border: '3px solid var(--border)', borderTopColor: 'var(--maroon)', flexShrink: 0 }}
+          />
+          <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 13 }}>Finishing up the MP4…</div>
         </motion.div>
       )}
 

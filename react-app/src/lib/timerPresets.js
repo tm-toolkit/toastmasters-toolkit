@@ -8,8 +8,12 @@ export const TIMER_PRESETS = {
   eval: [120, 150, 180],
 };
 
+// "Custom…" in the Type dropdown just means "let me type my own total time" —
+// it's not a category of its own. It reports as Speech, same as Ice Breaker
+// (speech46) already does, so it still shows up in the Charts/History Speech
+// column instead of being invisible to any category-based grouping.
 export const TYPE_LABELS = {
-  speech57: 'Speech', eval: 'Evaluator', topics: 'Table Topics', speech46: 'Speech', custom: 'Custom',
+  speech57: 'Speech', eval: 'Evaluator', topics: 'Table Topics', speech46: 'Speech', custom: 'Speech',
 };
 
 // For 'custom', pass the raw mm:ss text (from the Total time input); green/yellow

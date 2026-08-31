@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { secToMmSs, parseMmSs } from '../../lib/format';
 import { getPreset, TYPE_LABELS, isWithinTime } from '../../lib/timerPresets';
 import { buildTimerSaveHistory } from '../../lib/timerHistory';
+import { CATS } from '../../lib/chartHelpers';
 import ReportModal from '../../components/ReportModal';
 import TimerVideoTool from '../tools/TimerVideoTool';
 
@@ -23,6 +24,12 @@ function buildTimerScript() {
   ].join('\n');
 }
 const TIMER_SCRIPT = buildTimerScript();
+
+// Table Topics, then Speech, then Evaluator — same order as the Charts
+// speaker time report, so the Timer Log always groups by type instead of
+// showing entries in whatever order they happened to get logged.
+const typeOrder = (t) => { const idx = CATS.indexOf(t); return idx === -1 ? CATS.length : idx; };
+const byType = (a, b) => typeOrder(a.type) - typeOrder(b.type);
 
 function timerColorClass(elapsed, green, yellow, red) {
   if (elapsed >= red) return 'red';
@@ -82,7 +89,7 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
     const sp = queue[i];
     const elapsed = parseMmSs(sp.timeText);
     const within = isWithinTime(elapsed, sp.green, sp.red);
-    setLog([...log, { name: sp.name, type: sp.typeLabel, green: sp.green, yellow: sp.yellow, red: sp.red, elapsed, within }]);
+    setLog([...log, { name: sp.name, type: sp.typeLabel, green: sp.green, yellow: sp.yellow, red: sp.red, elapsed, within }].sort(byType));
     setQueue(queue.map((item, idx) => (idx === i ? { ...item, done: true } : item)));
   };
 

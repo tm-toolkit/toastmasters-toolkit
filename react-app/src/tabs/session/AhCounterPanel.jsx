@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FILLERS } from '../../lib/constants';
+import { CATS } from '../../lib/chartHelpers';
 import { total, findFirstDuplicate, buildAhSaveHistory } from '../../lib/ahHistory';
 import ReportModal from '../../components/ReportModal';
 import DupModal from '../../components/DupModal';
@@ -8,6 +9,14 @@ import DupModal from '../../components/DupModal';
 function initials(name) {
   return name.trim().split(/\s+/).map((w) => w[0]).join('').toUpperCase().slice(0, 2);
 }
+
+// Table Topics, then Speech, then Evaluator — same order used for the Timer
+// Log and the Charts speaker time report, so the summary/report always
+// groups by category instead of showing speakers in whatever order they
+// happened to get added. The tap-cards above stay in add order, unsorted —
+// only the finished summary reorders, same as Timer's queue vs. log.
+const typeOrder = (cat) => { const idx = CATS.indexOf(cat); return idx === -1 ? CATS.length : idx; };
+const byType = (a, b) => typeOrder(a.cat) - typeOrder(b.cat);
 
 const OPENING_SCRIPT = `"Greetings Mr./Madam Toastmaster, fellow Toastmasters, and guests. The purpose of the Ah-Counter is to note
 words and sounds that are used as a "crutch" or "pause filler" by anyone who speaks. During the meeting, I will
@@ -61,11 +70,13 @@ export default function AhCounterPanel({ roster, history, setHistory, onCountCha
     return active.length ? active : ['Ah', 'Um', 'Er', 'So'];
   }, [speakers]);
 
+  const sortedSpeakers = useMemo(() => [...speakers].sort(byType), [speakers]);
+
   const copyScript = () => navigator.clipboard.writeText(OPENING_SCRIPT);
 
   const openReport = () => {
     const lines = ['Mr./Madam Toastmaster, here is the Ah Counter report.\n'];
-    speakers.forEach((sp) => {
+    sortedSpeakers.forEach((sp) => {
       const t = total(sp.counts);
       if (!t) lines.push(`${sp.name} (${sp.cat}): No filler words. Excellent!`);
       else lines.push(`${sp.name} (${sp.cat}): ${t} filler word${t !== 1 ? 's' : ''} — ` + FILLERS.filter((f) => sp.counts[f] > 0).map((f) => `"${f.toLowerCase()}" ×${sp.counts[f]}`).join(', ') + '.');
@@ -177,7 +188,7 @@ export default function AhCounterPanel({ roster, history, setHistory, onCountCha
             <table>
               <thead><tr><th>Speaker</th><th>Cat</th>{summaryCols.map((f) => <th key={f}>{f}</th>)}<th>Total</th></tr></thead>
               <tbody>
-                {speakers.map((sp) => {
+                {sortedSpeakers.map((sp) => {
                   const t = total(sp.counts);
                   return (
                     <tr key={sp.name}>

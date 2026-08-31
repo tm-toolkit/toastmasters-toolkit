@@ -18,8 +18,8 @@ const OUTPUT_SCALE = 1.5;
 const OVERTIME_BUFFER_SEC = 120;
 
 const FONT_WEIGHTS = [
-  '500 10px Montserrat', '700 15px Montserrat', '700 17px Montserrat', '600 10px Montserrat',
-  '700 72px Montserrat', '700 13px Montserrat', '600 8px Montserrat',
+  '500 16px Montserrat', '700 26px Montserrat', '600 16px Montserrat', '700 140px Montserrat',
+  '700 20px Montserrat', '700 30px Montserrat', '600 13px Montserrat',
 ];
 
 function slugify(text) {
@@ -33,82 +33,84 @@ function drawFrame(ctx, logoImg, { speakerName, typeLabel, elapsed, green, yello
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
-  // Top-left: club logo. The brand manual's 72px figure is a *minimum* for
-  // small print/web placements (buttons, footers) — this is the dominant
-  // graphic on a full-frame background, so it runs well above that floor.
-  const logoH = 56;
-  let textX = 24;
+  // Top-left: club logo. Sized for a Zoom *gallery* tile, not a solo/pinned
+  // view — in an actual meeting with several people on screen, the whole
+  // 1920x1080 frame gets squeezed into a tile a couple hundred pixels wide,
+  // shrinking everything on it by 7-8x. A logo/clock that reads fine zoomed
+  // in is illegible at that size, so everything here runs much bigger than
+  // it looks like it "should" need to be at full resolution.
+  const logoH = 108;
+  let textX = 28;
   if (logoImg) {
     const logoW = logoH * (logoImg.width / logoImg.height);
-    ctx.drawImage(logoImg, 24, 16, logoW, logoH);
-    textX = 24 + logoW + 12;
+    ctx.drawImage(logoImg, 28, 20, logoW, logoH);
+    textX = 28 + logoW + 16;
   }
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.font = '500 10px Montserrat';
-  ctx.fillText('TOASTMASTERS INTERNATIONAL', textX, 40);
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.font = '700 15px Montserrat';
-  ctx.fillText('TIMER', textX, 60);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '500 16px Montserrat';
+  ctx.fillText('TOASTMASTERS INTERNATIONAL', textX, 55);
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.font = '700 26px Montserrat';
+  ctx.fillText('TIMER', textX, 95);
 
   // Top-right: speaker/type/clock, mirroring the logo's corner. Zoom
   // composites the presenter's full body roughly across the middle of the
-  // frame, so nothing sits center — but this plays inside a small gallery
-  // tile during an actual meeting, so the clock still runs large to stay
-  // readable at a glance, not just clear of the presenter.
+  // frame, so nothing sits center.
   ctx.textAlign = 'right';
-  let cy = 32;
+  let cy = 46;
   if (speakerName) {
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.font = '700 17px Montserrat';
-    ctx.fillText(speakerName, W - 24, cy);
-    cy += 20;
+    ctx.font = '700 26px Montserrat';
+    ctx.fillText(speakerName, W - 28, cy);
+    cy += 30;
   }
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.font = '600 10px Montserrat';
-  ctx.fillText(typeLabel.toUpperCase(), W - 24, cy);
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.font = '600 16px Montserrat';
+  ctx.fillText(typeLabel.toUpperCase(), W - 28, cy);
 
   ctx.fillStyle = colors.clock;
-  ctx.font = '700 72px Montserrat';
-  ctx.fillText(secToMmSs(elapsed), W - 24, 145);
+  ctx.font = '700 140px Montserrat';
+  ctx.fillText(secToMmSs(elapsed), W - 28, 240);
 
   if (colors.alertText) {
     ctx.fillStyle = colors.alertColor;
-    ctx.font = '700 13px Montserrat';
-    ctx.fillText(colors.alertText, W - 24, 168);
+    ctx.font = '700 20px Montserrat';
+    ctx.fillText(colors.alertText, W - 28, 272);
   }
 
-  // Left edge, vertically centered in the middle (person) band — green/
-  // yellow/red reference times, clear of both the top band and the center.
+  // Left edge — green/yellow/red reference times. Horizontally clear of the
+  // presenter (who occupies roughly the middle third of the frame's width),
+  // so there's no vertical constraint here — sized to match the clock.
   ctx.textAlign = 'left';
-  const leftX = 30;
+  const leftX = 32;
   const markers = [
     ['GREEN', green, '#43a047'],
     ['YELLOW', yellow, '#f9a825'],
     ['RED', red, '#e53935'],
   ];
   markers.forEach(([label, val, color], i) => {
-    const y = 300 + i * 44;
+    const y = 320 + i * 90;
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(leftX + 5, y - 5, 5, 0, Math.PI * 2);
+    ctx.arc(leftX + 10, y - 10, 10, 0, Math.PI * 2);
     ctx.fill();
-    ctx.font = '700 13px Montserrat';
+    ctx.font = '700 30px Montserrat';
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fillText(secToMmSs(val), leftX + 18, y);
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.font = '600 8px Montserrat';
-    ctx.fillText(label, leftX + 18, y + 12);
+    ctx.fillText(secToMmSs(val), leftX + 32, y);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '600 13px Montserrat';
+    ctx.fillText(label, leftX + 32, y + 22);
   });
 
   // Right edge — the same idea as the live Display Window's progress bar
   // (a dot traveling past green/yellow/red tick marks on a track), just
   // rotated: top = start, bottom = red, instead of left-to-right.
   const total = red || 1;
-  const trackX = W - 40, trackTop = 296, trackBottom = 456;
+  const trackX = W - 60, trackTop = 300, trackBottom = 580;
   const yFor = (v) => trackTop + Math.min(v / total, 1) * (trackBottom - trackTop);
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(trackX, trackTop);
   ctx.lineTo(trackX, trackBottom);
@@ -117,20 +119,20 @@ function drawFrame(ctx, logoImg, { speakerName, typeLabel, elapsed, green, yello
   [[green, '#43a047'], [yellow, '#f9a825'], [red, '#e53935']].forEach(([val, color]) => {
     const y = yFor(val);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(trackX - 7, y);
-    ctx.lineTo(trackX + 7, y);
+    ctx.moveTo(trackX - 14, y);
+    ctx.lineTo(trackX + 14, y);
     ctx.stroke();
   });
 
   const dotY = yFor(elapsed);
   ctx.fillStyle = colors.dot;
   ctx.beginPath();
-  ctx.arc(trackX, dotY, 7, 0, Math.PI * 2);
+  ctx.arc(trackX, dotY, 16, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 3;
   ctx.stroke();
 }
 

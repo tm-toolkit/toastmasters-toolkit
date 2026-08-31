@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { secToMmSs, parseMmSs } from '../../lib/format';
 import { getPreset, TYPE_LABELS, isWithinTime } from '../../lib/timerPresets';
@@ -34,7 +34,6 @@ function timerColorClass(elapsed, green, yellow, red) {
 export default function TimerPanel({ roster, history, setHistory, onCountChange }) {
   const [queue, setQueue] = useState([]);
   const [log, setLog] = useState([]);
-  const [activeIdx, setActiveIdx] = useState(-1);
   const [selectValue, setSelectValue] = useState('');
   const [guestName, setGuestName] = useState('');
   const [type, setType] = useState('speech57');
@@ -43,10 +42,8 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
   const [report, setReport] = useState(null);
   const [editingLogIdx, setEditingLogIdx] = useState(-1);
   const [logEditValue, setLogEditValue] = useState('');
-  const intervalRef = useRef(null);
 
   useEffect(() => { onCountChange?.(queue.length); }, [queue, onCountChange]);
-  useEffect(() => () => clearInterval(intervalRef.current), []);
 
   const customPreview = (() => {
     // parseMmSs inline to avoid importing just for a preview string
@@ -63,65 +60,30 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
 
   const addToQueue = () => {
     if (!speakerName) return;
-    setQueue([{ name: speakerName, type, typeLabel, green, yellow, red, elapsed: 0, state: 'pending', done: false }, ...queue]);
-    setActiveIdx((idx) => (idx >= 0 ? idx + 1 : idx));
+    setQueue([{ name: speakerName, type, typeLabel, green, yellow, red, timeText: '', done: false }, ...queue]);
     setGuestName('');
     setSelectValue('');
   };
 
-  const stopLiveTimer = (currentQueue = queue) => {
-    clearInterval(intervalRef.current);
-    intervalRef.current = null;
-    if (activeIdx >= 0 && currentQueue[activeIdx]) {
-      const idx = activeIdx;
-      setQueue((q) => q.map((item, i) => i === idx ? { ...item, state: 'stopped' } : item));
-    }
-    setActiveIdx(-1);
-  };
-
   const removeFromQueue = (i) => {
-    if (activeIdx === i) stopLiveTimer();
     setQueue(queue.filter((_, idx) => idx !== i));
-    setActiveIdx((idx) => (idx >= i ? idx - 1 : idx));
   };
 
-  const runInterval = (i, startElapsed) => {
-    clearInterval(intervalRef.current);
-    let elapsed = startElapsed;
-    intervalRef.current = setInterval(() => {
-      elapsed += 1;
-      setQueue((q) => q.map((item, idx) => idx === i ? { ...item, elapsed } : item));
-    }, 1000);
+  const updateQueueTime = (i, text) => {
+    setQueue(queue.map((item, idx) => (idx === i ? { ...item, timeText: text } : item)));
   };
 
-  const startSpeaker = (i) => {
-    if (activeIdx === i) return;
-    stopLiveTimer();
-    setQueue((q) => q.map((item, idx) => idx === i ? { ...item, elapsed: 0, state: 'running', done: false } : item));
-    setActiveIdx(i);
-    runInterval(i, 0);
-  };
-
-  const resumeSpeaker = (i) => {
-    if (activeIdx === i) return;
-    stopLiveTimer();
-    const sp0 = queue[i];
-    setQueue((q) => q.map((item, idx) => idx === i ? { ...item, state: 'running' } : item));
-    setActiveIdx(i);
-    runInterval(i, sp0.elapsed || 0);
-  };
-
-  const pause = () => stopLiveTimer();
-
+  // No live ticking clock here on purpose: a setInterval-based countdown
+  // freezes as soon as the browser tab loses focus (e.g. while the officer
+  // is looking at Zoom, not the toolkit) — the timing itself already happens
+  // on-screen for the room via the Zoom background video, so this is just a
+  // plain field to type the final time into once the speaker finishes.
   const logSpeaker = (i) => {
     const sp = queue[i];
-    clearInterval(intervalRef.current);
-    intervalRef.current = null;
-    const elapsed = sp.elapsed || 0;
+    const elapsed = parseMmSs(sp.timeText);
     const within = isWithinTime(elapsed, sp.green, sp.red);
     setLog([...log, { name: sp.name, type: sp.typeLabel, green: sp.green, yellow: sp.yellow, red: sp.red, elapsed, within }]);
-    setQueue(queue.map((item, idx) => idx === i ? { ...item, done: true, state: 'logged' } : item));
-    setActiveIdx(-1);
+    setQueue(queue.map((item, idx) => (idx === i ? { ...item, done: true } : item)));
   };
 
   const startEditLog = (i) => {
@@ -162,7 +124,7 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
     <div>
       <div className="section-head">
         <h2>Timer</h2>
-        <p>Select a speaker and type once — download the Zoom background video, add them to the queue, and start the clock</p>
+        <p>Select a speaker and type once — download the Zoom background video, add them to the queue, and type in their time once they finish</p>
         <div className="maroon-line"></div>
       </div>
 
@@ -219,8 +181,7 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
         <div className="empty-state"><div className="icon">⏱</div><p>No speakers in queue.<br />Add speakers above.</p></div>
       ) : (
         queue.map((sp, i) => {
-          const isActive = activeIdx === i;
-          const colorClass = timerColorClass(sp.elapsed || 0, sp.green, sp.yellow, sp.red);
+          const colorClass = !sp.done && timerColorClass(parseMmSs(sp.timeText), sp.green, sp.yellow, sp.red);
           return (
             <motion.div key={i} className={'timer-live-card' + (colorClass ? ' ' + colorClass : '')} layout style={sp.done ? { opacity: 0.55 } : undefined}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -231,26 +192,18 @@ export default function TimerPanel({ roster, history, setHistory, onCountChange 
                 </div>
                 <button className="btn-d" onClick={() => removeFromQueue(i)}>×</button>
               </div>
-              {(isActive || sp.state === 'stopped') && (
-                <>
-                  <div className={'timer-clock' + (sp.state === 'stopped' && !colorClass ? ' yellow' : colorClass ? ' ' + colorClass : '')}>{secToMmSs(sp.elapsed || 0)}</div>
-                  <div className="timer-signals" style={{ display: 'flex', gap: 12, justifyContent: 'center', margin: '10px 0' }}>
-                    <div className={'signal-dot g' + ((sp.elapsed || 0) >= sp.green ? ' active' : '')}></div>
-                    <div className={'signal-dot y' + ((sp.elapsed || 0) >= sp.yellow ? ' active' : '')}></div>
-                    <div className={'signal-dot r' + ((sp.elapsed || 0) >= sp.red ? ' active' : '')}></div>
-                  </div>
-                </>
-              )}
               <div className="timer-btn-row">
-                {!sp.done && (
-                  isActive
-                    ? <button className="btn-start running" onClick={pause}>⏸ Pause</button>
-                    : sp.state === 'stopped'
-                      ? <button className="btn-start" onClick={() => resumeSpeaker(i)}>▶ Resume</button>
-                      : <button className="btn-start" onClick={() => startSpeaker(i)}>▶ Start</button>
+                {!sp.done ? (
+                  <>
+                    <input
+                      type="text" placeholder="mm:ss" value={sp.timeText} onChange={(e) => updateQueueTime(i, e.target.value)}
+                      style={{ width: 90, fontSize: 18, fontWeight: 700, fontFamily: 'var(--font-head)', padding: '8px 10px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', textAlign: 'center' }}
+                    />
+                    <button className="btn-log" onClick={() => logSpeaker(i)}>✓ Log Time</button>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 12, color: 'var(--green)', fontFamily: 'var(--font-head)', fontWeight: 700 }}>✓ Logged {secToMmSs(parseMmSs(sp.timeText))}</span>
                 )}
-                {(isActive || sp.state === 'stopped') && <button className="btn-log" onClick={() => logSpeaker(i)}>✓ Log Time</button>}
-                {sp.done && <span style={{ fontSize: 12, color: 'var(--green)', fontFamily: 'var(--font-head)', fontWeight: 700 }}>✓ Logged {secToMmSs(sp.elapsed)}</span>}
               </div>
             </motion.div>
           );
